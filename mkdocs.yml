@@ -1,0 +1,68 @@
+site_name: eodh-workflows
+site_description: Workflows for EO DataHub platform.
+site_dir: docs-site
+repo_url: https://github.com/EO-DataHub/eodh-workflows
+edit_uri: edit/main/docs
+copyright: Copyright 2024 Spyrosoft
+theme:
+  name: material
+markdown_extensions:
+  - admonition
+  - attr_list
+  - codehilite
+  - md_in_html
+  - meta
+  - pymdownx.details
+  - pymdownx.highlight:
+      use_pygments: true
+  - pymdownx.superfences
+  - pymdownx.tabbed
+plugins:
+  - glightbox:
+      touchNavigation: true
+      loop: false
+      effect: zoom
+      slide_effect: slide
+      width: 100%
+      height: auto
+      zoomable: true
+      draggable: true
+      skip_classes:
+        - custom-skip-class-name
+      auto_caption: false
+      caption_position: bottom
+      background: white
+      shadow: true
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_root_toc_entry: False
+            show_root_full_path: True
+            show_root_members_full_path: True
+            show_object_full_path: True
+            show_root_heading: False
+            show_source: True
+            show_category_heading: False
+            show_bases: True
+            show_signature: False
+            filters:
+              - "!^_"  # exclude all members starting with _
+            heading_level: 3
+watch:
+  - src/
+nav:
+  - Home: index.md
+  - Guides:
+      - Setting up dev environment: "guides/setup-dev-env.md"
+      - Contributing: "guides/contributing.md"
+      - Running tests: "guides/tests.md"
+      - Using Makefile commands: "guides/makefile-usage.md"
+  - API reference:
+      - src.consts: "api_ref/consts.md"
+      - src.core:
+          - configs: "api_ref/core/configs.md"
+          - settings: "api_ref/core/settings.md"
+      - src.utils: "api_ref/utils.md"

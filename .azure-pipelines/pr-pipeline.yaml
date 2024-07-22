@@ -1,0 +1,23 @@
+trigger: none
+
+pr:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.11"
+      addToPath: true
+
+  - script: |
+      python -m pip install --upgrade pip
+      pip install pre-commit
+      pre-commit install
+    displayName: "Install dependencies"
+
+  - script: |
+      SKIP=pytest-check pre-commit run --all-files
+    displayName: "Run simplified pre-commit hooks"
