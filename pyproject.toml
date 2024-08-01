@@ -35,6 +35,9 @@ Homepage = 'https://github.com/EO-DataHub/eodh-workflows'
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"]}
 
+[project.scripts]
+eodh = "src.workflows.entrypoint:cli"
+
 [tool.ruff]
 show-fixes = true
 target-version = "py38"

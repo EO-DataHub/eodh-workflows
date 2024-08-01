@@ -72,7 +72,7 @@ RUN echo "Installing Mambaforge..." \
     # quite a bit unfortunately - see https://github.com/2i2c-org/infrastructure/issues/2047
     && find ${CONDA_DIR} -follow -type f -name '*.a' -delete
 
-COPY --chown=jovyan:jovyan . /home/jovyan
+COPY --chown=jovyan:jovyan . ${HOME}
 
 # We want to keep our images as reproducible as possible. If a lock
 # file with exact versions of all required packages is present, we use
@@ -88,6 +88,7 @@ RUN conda-lock install --name ${CONDA_ENV} conda-lock.yml && \
     find ${CONDA_DIR} -follow -type f -name '*.js.map' -delete && \
     if [ -d ${ENV_PREFIX}/lib/python*/site-packages/bokeh/server/static ]; then \
     find ${ENV_PREFIX}/lib/python*/site-packages/bokeh/server/static -follow -type f -name '*.js' ! -name '*.min.js' -delete \
-    ; fi
+    ; fi && \
+    pip install -e .
 
-CMD ["bash"]
+CMD ["eodh", "raster", "calculate", "--help"]
