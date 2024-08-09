@@ -15,8 +15,12 @@ from rasterio import features
 from tqdm import tqdm
 
 from src import consts
+from src.consts import crs
 from src.utils.logging import get_logger
 from src.workflows.raster.indices import calculate_index
+
+from shapely.geometry import shape, Polygon
+import pyproj
 
 if TYPE_CHECKING:
     import xarray
@@ -39,6 +43,8 @@ _logger = get_logger(__name__)
     show_default=True,
     help="The spectral index to calculate",
 )
+# TODO add SAVI
+
 @click.option(
     "--output_dir",
     type=click.Path(path_type=Path),  # type: ignore[type-var]
@@ -80,9 +86,30 @@ def calculate(  # noqa: PLR0913, PLR0917
         msg = f"Calculating `{index}` index is not possible for STAC collection `{stac_collection}`"
         raise ValueError(msg)
 
+    # Validate if bbox area <= area_sqkm_threshold
     aoi_polygon = json.loads(aoi)
-    # TODO validate polygon area < 50 kq km
+    bbox = features.bounds(aoi_polygon)
+    bbox_coordinates = [(bbox[0], bbox[1]), (bbox[0], bbox[3]), (bbox[2], bbox[1]), (bbox[2], bbox[3])]
 
+    def wgs84_to_utm(lat, lon):
+        crs_wgs84 = pyproj.CRS(consts.crs.WGS84)
+        crs_utm = pyproj.CRS(consts.crs.UNIVERSAL_TRANSVERSE_MERCATOR)
+        transformer = pyproj.Transformer.from_crs(crs_wgs84, crs_utm)
+        return transformer.transform(lon, lat)
+
+    utm_coords = [wgs84_to_utm(*coord) for coord in bbox_coordinates]
+    utm_polygon = Polygon(utm_coords)
+
+    # Calculate the area in square meters (Web Mercator uses meters as units)
+    area_sqm = utm_polygon.area
+    area_sqkm = area_sqm / 1_000_000
+
+    area_sqkm_threshold = 1000
+    if area_sqkm >= area_sqkm_threshold:
+        msg = f"The AOI you selected is too large. Please provide an AOI below `{area_sqkm_threshold}` sq km.`"
+        raise ValueError(msg)
+
+    # Connect to STAC API
     catalog = Client.open(consts.stac.CATALOG_API_ENDPOINT)
 
     # Define your search with CQL2 syntax
