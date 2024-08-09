@@ -34,9 +34,15 @@ def evi(raster_arr: xarray.DataArray) -> xarray.DataArray:
     blue = raster_arr.sel(band="blue")
     return (2.5 * ((nir - red) / ((nir + 6 * red - 7.5 * blue) + 1.0 + consts.compute.EPS))).compute()
 
+def savi(raster_arr: xarray.DataArray) -> xarray.DataArray:
+    # Assumes common names for bands
+    nir = raster_arr.sel(band="nir")
+    red = raster_arr.sel(band="red")
+    return ((1+0.5)*(nir - red) / ((nir + red + 0.5) + consts.compute.EPS)).compute()
 
 index_calculation_func_lookup = {
     "ndvi": ndvi,
     "ndwi": ndwi,
     "evi": evi,
+    "savi": savi
 }

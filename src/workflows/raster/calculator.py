@@ -39,7 +39,7 @@ _logger = get_logger(__name__)
 @click.option(
     "--index",
     default="NDVI",
-    type=click.Choice(["NDVI", "NDWI", "EVI"], case_sensitive=False),
+    type=click.Choice(["NDVI", "NDWI", "EVI", "SAVI"], case_sensitive=False),
     show_default=True,
     help="The spectral index to calculate",
 )
@@ -136,7 +136,6 @@ def calculate(  # noqa: PLR0913, PLR0917
             bbox=bbox,
             output_dir=output_dir,
         )
-
 
 def calculate_and_save_index(  # noqa: PLR0913, PLR0917
     item: Item,
