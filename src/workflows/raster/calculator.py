@@ -43,7 +43,6 @@ _logger = get_logger(__name__)
     show_default=True,
     help="The spectral index to calculate",
 )
-# TODO add SAVI
 
 @click.option(
     "--output_dir",
