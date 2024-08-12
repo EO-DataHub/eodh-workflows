@@ -2,25 +2,27 @@ from __future__ import annotations
 
 import json
 import warnings
+from itertools import starmap
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import click
 import numpy as np
 import planetary_computer as pc
+import pyproj
 import rioxarray  # noqa: F401
 import stackstac
+from pyproj import CRS
+from pyproj.aoi import AreaOfInterest
+from pyproj.database import query_utm_crs_info
 from pystac_client import Client
 from rasterio import features
+from shapely.geometry import Polygon
 from tqdm import tqdm
 
 from src import consts
-from src.consts import crs
 from src.utils.logging import get_logger
 from src.workflows.raster.indices import calculate_index
-
-from shapely.geometry import shape, Polygon
-import pyproj
 
 if TYPE_CHECKING:
     import xarray
@@ -29,6 +31,7 @@ if TYPE_CHECKING:
 warnings.filterwarnings("ignore", category=UserWarning, message="The argument 'infer_datetime_format'")
 
 _logger = get_logger(__name__)
+AREA_SQ_KM_THRESHOLD = 1000
 
 
 @click.command(help="Calculate spectral index")
@@ -43,13 +46,12 @@ _logger = get_logger(__name__)
     show_default=True,
     help="The spectral index to calculate",
 )
-
 @click.option(
     "--output_dir",
     type=click.Path(path_type=Path),  # type: ignore[type-var]
     help="Path to the output directory - will create new dir in CWD if not provided",
 )
-def calculate(  # noqa: PLR0913, PLR0917
+def calculate(
     stac_collection: str,
     aoi: str,
     date_start: str,
@@ -85,27 +87,19 @@ def calculate(  # noqa: PLR0913, PLR0917
         msg = f"Calculating `{index}` index is not possible for STAC collection `{stac_collection}`"
         raise ValueError(msg)
 
-    # Validate if bbox area <= area_sqkm_threshold
     aoi_polygon = json.loads(aoi)
-    bbox = features.bounds(aoi_polygon)
-    bbox_coordinates = [(bbox[0], bbox[1]), (bbox[0], bbox[3]), (bbox[2], bbox[1]), (bbox[2], bbox[3])]
+    bbox: tuple[int | float, int | float, int | float, int | float] = features.bounds(aoi_polygon)  # type: ignore[assignment]
 
-    def wgs84_to_utm(lat, lon):
-        crs_wgs84 = pyproj.CRS(consts.crs.WGS84)
-        crs_utm = pyproj.CRS(consts.crs.UNIVERSAL_TRANSVERSE_MERCATOR)
-        transformer = pyproj.Transformer.from_crs(crs_wgs84, crs_utm)
-        return transformer.transform(lon, lat)
+    wgs84_crs = pyproj.CRS(consts.crs.WGS84)
+    utm_crs = estimate_utm_crs(bbox)
+    transformer = pyproj.Transformer.from_crs(wgs84_crs, utm_crs)
+    utm_polygon = Polygon(list(starmap(transformer.transform, aoi_polygon["coordinates"][0])))
 
-    utm_coords = [wgs84_to_utm(*coord) for coord in bbox_coordinates]
-    utm_polygon = Polygon(utm_coords)
-
-    # Calculate the area in square meters (Web Mercator uses meters as units)
-    area_sqm = utm_polygon.area
-    area_sqkm = area_sqm / 1_000_000
-
-    area_sqkm_threshold = 1000
-    if area_sqkm >= area_sqkm_threshold:
-        msg = f"The AOI you selected is too large. Please provide an AOI below `{area_sqkm_threshold}` sq km.`"
+    if (area_sq_km := utm_polygon.area / 1_000_000) >= AREA_SQ_KM_THRESHOLD:
+        msg = (
+            f"The AOI you selected is too large ({area_sq_km} sq km). "
+            f"Please provide an AOI below `{AREA_SQ_KM_THRESHOLD}` sq km."
+        )
         raise ValueError(msg)
 
     # Connect to STAC API
@@ -125,7 +119,6 @@ def calculate(  # noqa: PLR0913, PLR0917
     )
 
     items = [pc.sign(item) for item in search.item_collection()]
-    bbox: tuple[int | float, int | float, int | float, int | float] = features.bounds(aoi_polygon)
 
     for item in tqdm(items, desc="Processing items"):
         calculate_and_save_index(
@@ -136,7 +129,16 @@ def calculate(  # noqa: PLR0913, PLR0917
             output_dir=output_dir,
         )
 
-def calculate_and_save_index(  # noqa: PLR0913, PLR0917
+
+def estimate_utm_crs(extent: tuple[float, float, float, float]) -> CRS:
+    utm_crs_list = query_utm_crs_info(
+        datum_name="WGS 84",
+        area_of_interest=AreaOfInterest(*extent),
+    )
+    return CRS.from_epsg(utm_crs_list[0].code)
+
+
+def calculate_and_save_index(
     item: Item,
     bbox: tuple[int | float, int | float, int | float, int | float],
     index: str,

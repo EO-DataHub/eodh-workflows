@@ -1,0 +1,16 @@
+.github
+data
+.ipynb_checkpoints
+docs
+notebooks
+tests
+README.md
+pyproject.toml
+mkdocs.yml
+Makefile
+LICENSE
+env.yaml
+env-dev.yaml
+conda-lock-dev.yml
+Dockerfile
+.pre-commit-config.yaml

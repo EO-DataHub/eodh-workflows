@@ -109,12 +109,14 @@ ignore = [
     "ANN102",  # see: https://pypi.org/project/flake8-annotations - Missing type annotation for cls in method
     "ANN401",  # see: https://pypi.org/project/flake8-annotations - Dynamically typed expressions (typing.Any) are disallowed
     "D1",  # see: https://pypi.org/project/pydocstyle - D1 - undocumented public member - too restrictive
-    "COM", # see: https://pypi.org/project/flake8-commas - conflicts with formatter
-    "ISC", # see: https://pypi.org/project/flake8-implicit-str-concat - conflicts with formatter
-    "CPY", # see: https://pypi.org/project/flake8-copyright - not used
-    "DJ", # see: https://pypi.org/project/flake8-django - not used
-    "TD", # see: https://pypi.org/project/flake8-todos - too restrictive
-    "FIX", # see: https://pypi.org/project/flake8-fixme - too restrictive
+    "COM",  # see: https://pypi.org/project/flake8-commas - conflicts with formatter
+    "ISC",  # see: https://pypi.org/project/flake8-implicit-str-concat - conflicts with formatter
+    "CPY",  # see: https://pypi.org/project/flake8-copyright - not used
+    "DJ",  # see: https://pypi.org/project/flake8-django - not used
+    "TD",  # see: https://pypi.org/project/flake8-todos - too restrictive
+    "FIX",  # see: https://pypi.org/project/flake8-fixme - too restrictive
+    "PLR0913",  # see: https://pypi.org/project/Pylint - Too many arguments in function definition
+    "PLR0917",  # see: https://pypi.org/project/Pylint - Too many positional arguments
 ]
 
 [tool.ruff.format]
@@ -191,10 +193,12 @@ module = [
     "planetary_computer.*",
     "pydantic.*",
     "pydantic_settings.*",
+    "pyproj.*",
     "pystac.*",
     "pystac_client.*",
     "rasterio.*",
     "rioxarray.*",
+    "shapely.*",
     "stackstac.*",
     "xarray.*",
 ]
