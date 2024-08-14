@@ -5,7 +5,6 @@ docs
 notebooks
 tests
 README.md
-pyproject.toml
 mkdocs.yml
 Makefile
 LICENSE
