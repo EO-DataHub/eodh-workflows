@@ -3,8 +3,6 @@ FROM ubuntu:22.04
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV DEBIAN_FRONTEND noninteractive
 
-ARG aaaaa=aaa
-
 # Setup environment to match variables set by repo2docker as much as possible
 # The name of the conda environment into which the requested packages are installed
 ENV CONDA_ENV=eodh-workflows \
