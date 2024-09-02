@@ -4,6 +4,18 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - docs/**
+      - data/**
+      - notebooks/**
+      - tests/**
+      - env.yaml
+      - env-dev.yaml
+      - LICENSE
+      - Makefile
+      - mkdocs.yml
+      - README.md
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
