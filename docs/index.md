@@ -2,16 +2,28 @@
 
 Workflows for EO DataHub platform.
 
-## Getting Started
+## Getting started
 
-Run `make --help` for available options.
+Create the environment:
 
-## Local env creation
+```shell
+make env
+```
 
-See: [Set up python env](./guides/setup-dev-env.md) for details.
+Run `pre-commit` hooks:
 
-You should be able to create local dev env using your [conda](https://docs.conda.io/en/latest/miniconda.html)
-installation.
+```shell
+make pc
+```
+
+## Guides
+
+Read more here:
+
+- [Development env setup](guides/setup-dev-env.md)
+- [Contributing](guides/contributing.md)
+- [Makefile usage](guides/makefile-usage.md)
+- [Running tests](guides/tests.md)
 
 ## Docs
 
@@ -25,12 +37,4 @@ and then:
 
 ```shell
 mkdocs serve
-```
-
-## Running tests
-
-To run the unit tests execute:
-
-```shell
-pytest tests -v
 ```
