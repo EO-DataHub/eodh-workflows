@@ -1,5 +1,8 @@
 # eodh-workflows
 
+[![publish-docs](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/docs-pipeline.yaml/badge.svg)](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/docs-pipeline.yaml)
+[![build-and-publish-docker-image](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/publish-pipeline.yaml/badge.svg)](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/publish-pipeline.yaml)
+
 Workflows for EO DataHub platform.
 
 ## Getting started
