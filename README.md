@@ -1,7 +1,7 @@
 # eodh-workflows
 
-[![Build and publish Docker image](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/publish-pipeline.yaml/badge.svg)](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/publish-pipeline.yaml)
-[![Deploy documentation](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/docs-pipeline.yaml/badge.svg)](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/docs-pipeline.yaml)
+[![publish](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/publish-pipeline.yaml/badge.svg)](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/publish-pipeline.yaml)
+[![docs](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/docs-pipeline.yaml/badge.svg)](https://github.com/EO-DataHub/eodh-workflows/actions/workflows/docs-pipeline.yaml)
 
 Workflows for Action Creator component on EOPro platform.
 
