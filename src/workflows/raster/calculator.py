@@ -22,6 +22,7 @@ from tqdm import tqdm
 
 from src import consts
 from src.utils.logging import get_logger
+from src.workflows.raster.generate_stac import create_stac_catalog_root, create_stac_item
 from src.workflows.raster.indices import calculate_index
 
 if TYPE_CHECKING:
@@ -120,14 +121,19 @@ def calculate(
 
     items = [pc.sign(item) for item in search.item_collection()]
 
+    paths = []
     for item in tqdm(items, desc="Processing items"):
-        calculate_and_save_index(
+        json_path = calculate_and_save_index(
             item=item,
             index=index.lower(),
             collection=stac_collection,
             bbox=bbox,
             output_dir=output_dir,
         )
+
+        paths.append(json_path)
+
+    create_stac_catalog_root(paths, output_dir)
 
 
 def estimate_utm_crs(extent: tuple[float, float, float, float]) -> CRS:
@@ -145,17 +151,21 @@ def calculate_and_save_index(
     collection: str,
     output_dir: Path | None = None,
     epsg: int = 4326,
-) -> None:
+) -> Path:
     raster_arr = build_raster_array(item=item, bbox=bbox, collection=collection, index=index, epsg=epsg)
     index_raster = calculate_index(index=index, raster_arr=raster_arr)
-    save_raster(index_raster=index_raster, item_id=item.id, output_dir=output_dir, epsg=epsg)
+    raster_path = save_raster(index_raster=index_raster, item_id=item.id, output_dir=output_dir, epsg=epsg)
+
+    return create_stac_item(raster_path.name, output_dir)
 
 
-def save_raster(index_raster: xarray.DataArray, item_id: str, output_dir: Path | None = None, epsg: int = 4326) -> None:
+def save_raster(index_raster: xarray.DataArray, item_id: str, output_dir: Path | None = None, epsg: int = 4326) -> Path:
     if output_dir is None:
         output_dir = Path.cwd()
     index_raster = index_raster.rio.write_crs(f"EPSG:{epsg}")
     index_raster.rio.to_raster(output_dir / f"{item_id}.tif", driver="COG", windowed=True)
+
+    return Path(output_dir / f"{item_id}.tif")
 
 
 def build_raster_array(
