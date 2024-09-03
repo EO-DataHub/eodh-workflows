@@ -12,11 +12,11 @@ def create_stac_item(out_name: str, out_dir: Path | None) -> Path:
     if out_dir is None:
         out_dir = Path.cwd()
 
-    stem = Path(out_name).stem
+    stem = Path(Path.cwd() / out_name).stem
     now = time.time_ns() / 1_000_000_000
     date_now_dt = dt.datetime.fromtimestamp(now, tz=dt.timezone.utc)
     date_now = date_now_dt.strftime("%Y-%m-%dT%H:%M:%S.%f") + "Z"
-    size = Path(f"{out_name}").stat().st_size
+    size = Path(Path.cwd() / out_name).stat().st_size
     mime = mimetypes.guess_type(f"{out_name}")[0]
     data = {
         "stac_version": "1.0.0",
