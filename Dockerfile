@@ -90,3 +90,5 @@ RUN conda-lock install --name ${CONDA_ENV} conda-lock.yml && \
     find ${ENV_PREFIX}/lib/python*/site-packages/bokeh/server/static -follow -type f -name '*.js' ! -name '*.min.js' -delete \
     ; fi && \
     pip install -e .
+
+ENTRYPOINT ["eodh", "raster", "calculate"]
