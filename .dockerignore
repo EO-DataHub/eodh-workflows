@@ -11,5 +11,4 @@ LICENSE
 env.yaml
 env-dev.yaml
 conda-lock-dev.yml
-Dockerfile
 .pre-commit-config.yaml
