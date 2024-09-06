@@ -8,9 +8,6 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV CONDA_ENV=eodh-workflows \
     # Tell apt-get to not block installs by asking for interactive human input
     DEBIAN_FRONTEND=noninteractive \
-    # Set username, uid and gid (same as uid) of non-root user the container will be run as
-    APP_USER=jovyan \
-    APP_UID=1000 \
     # Use /bin/bash as shell, not the default /bin/sh (arrow keys, etc don't work then)
     SHELL=/bin/bash \
     # Setup locale to be UTF-8, avoiding gnarly hard to debug encoding errors
@@ -21,22 +18,12 @@ ENV CONDA_ENV=eodh-workflows \
 
 # All env vars that reference other env vars need to be in their own ENV block
 # Path to the python environment where the packages are installed
-ENV ENV_PREFIX=${CONDA_DIR}/envs/${CONDA_ENV} \
-    # Home directory of our non-root user
-    HOME=/home/${APP_USER}
+ENV ENV_PREFIX=${CONDA_DIR}/envs/${CONDA_ENV}
 
 # Add both our ParkSpace env as well as default conda installation to $PATH
 # Thus, when we start a `python` process, it loads the python in the ps conda environment,
 # as that comes first here.
 ENV PATH=${ENV_PREFIX}/bin:${CONDA_DIR}/bin:${PATH}
-
-RUN echo "Creating ${APP_USER} user..." \
-    # Create a group for the user to be part of, with gid same as uid
-    && groupadd --gid ${APP_UID} ${APP_USER}  \
-    # Create non-root user, with given gid, uid and create $HOME
-    && useradd --create-home --gid ${APP_UID} --no-log-init --uid ${APP_UID} ${APP_USER} \
-    # Make sure that /srv is owned by non-root user, so we can install things there
-    && chown -R ${APP_USER}:${APP_USER} /srv
 
 # Run conda activate each time a bash shell starts, so users don't have to manually type conda activate
 # Note this is only read by shell, but not by the jupyter notebook - that relies
@@ -55,7 +42,6 @@ RUN echo "Installing Apt-get packages..." \
 ENV TZ UTC
 # ========================
 
-USER ${APP_USER}
 WORKDIR ${HOME}
 
 # Install latest mambaforge in ${CONDA_DIR}
@@ -72,7 +58,7 @@ RUN echo "Installing Mambaforge..." \
     # quite a bit unfortunately - see https://github.com/2i2c-org/infrastructure/issues/2047
     && find ${CONDA_DIR} -follow -type f -name '*.a' -delete
 
-COPY --chown=jovyan:jovyan . ${HOME}
+COPY --chown=1000:1000 . ${HOME}
 
 # We want to keep our images as reproducible as possible. If a lock
 # file with exact versions of all required packages is present, we use
