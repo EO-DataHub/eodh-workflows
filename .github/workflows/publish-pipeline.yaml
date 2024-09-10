@@ -9,6 +9,7 @@ on:
       - data/**
       - notebooks/**
       - tests/**
+      - cwl_files/**
       - env.yaml
       - env-dev.yaml
       - LICENSE

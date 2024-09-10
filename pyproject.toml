@@ -138,7 +138,7 @@ combine-as-imports = true
 convention = "google"
 
 [tool.pytest.ini_options]
-addopts = "--ignore data --ignore notebooks --ignore build_tools --ignore examples --ignore docs"
+addopts = "--ignore data --ignore notebooks --ignore build_tools --ignore examples --ignore docs --ignore cwl_files"
 asyncio_mode = "auto"
 markers = [
     "unit: mark a test as a unit test.",
@@ -208,7 +208,7 @@ ignore_errors = true
 [tool.interrogate]
 ignore-init-module = true
 ignore_init_method = true
-exclude = ["tests", "docs", "site"]
+exclude = ["tests", "docs", "site", "cwl_files"]
 omit-covered-files = true
 
 [tool.coverage.run]
