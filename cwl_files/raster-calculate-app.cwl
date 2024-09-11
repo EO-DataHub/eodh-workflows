@@ -37,7 +37,7 @@ $graph:
         type: string
 
     outputs:
-      - id: calc_results
+      - id: results
         type: Directory
         outputSource:
           - calculator/results
