@@ -4,6 +4,7 @@ data
 docs
 notebooks
 tests
+cwl_files
 README.md
 mkdocs.yml
 Makefile
