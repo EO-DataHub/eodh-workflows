@@ -146,16 +146,11 @@ docker-build:
 .PHONY: docker-run  ## Run Docker container
 docker-run:
 	@echo "Running Docker container..."
-	docker run -d -v ./data/eodh-results:/outputs/eodh-results \
+	docker run -it \
 		--name $(CONTAINER_NAME) $(IMAGE_NAME) \
-		--stac_collection=sentinel-2-l2a \
-		--aoi="{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
-		--date_start=2024-01-03 \
-		--date_end=2024-08-01 \
-		--index=ndvi \
-		--output_dir=/outputs/eodh-results/ndvi
+		/bin/bash
 
-.PHONY: docker-stop  ## Stop Docker container
+.PHONY: docker-stop -## Stop Docker container
 docker-stop:
 	@echo "Stopping Docker container..."
 	docker stop $(CONTAINER_NAME)
