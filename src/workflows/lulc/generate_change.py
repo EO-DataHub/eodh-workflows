@@ -8,12 +8,15 @@ import click
 import numpy as np
 from pystac import Item
 from pystac_client import Client
-from shapely.geometry import mapping, shape
+from shapely.geometry import Polygon, mapping
 from tqdm import tqdm
 
 from src import consts
+from src.geom_utils.calculate import calculate_geodesic_area
+from src.geom_utils.transform import gejson_to_polygon
 from src.local_stac.generate import generate_stac, prepare_stac_item
 from src.raster_utils.build import build_raster_array
+from src.raster_utils.helpers import get_raster_bounds
 from src.raster_utils.save import save_cog
 from src.utils.logging import get_logger
 
@@ -29,42 +32,24 @@ _logger = get_logger(__name__)
 @click.option("--start_date", required=True, help="Start date in ISO 8601 used to search input data")
 @click.option("--end_date", required=True, help="End date in ISO 8601 used to search input data")
 def generate_lulc_change(aoi: str, start_date: str, end_date: str) -> None:
-    # Connect to STAC API
-    catalog = Client.open(consts.stac.CEDA_CATALOG_API_ENDPOINT)
-    stac_collection = consts.stac.CEDA_ESACCI_LC_COLLECTION_NAME
-
     _logger.info(
         "Running with:\n%s", json.dumps({"aoi": aoi, "start_date": start_date, "end_date": end_date}, indent=4)
     )
 
     # Transferring the AOI
-    aoi_geojson = json.loads(aoi)
-    if aoi_geojson["type"] != "Polygon":
-        msg = "Provided GeoJSON is not a polygon"
-        raise ValueError(msg)
-    aoi_polygon = shape(aoi_geojson)
+    aoi_polygon = gejson_to_polygon(aoi)
 
-    # Querying the data
-    search = catalog.search(
-        filter_lang="cql2-json",
-        filter={
-            "op": "and",
-            "args": [
-                {"op": "s_intersects", "args": [{"property": "geometry"}, mapping(aoi_polygon)]},
-                {"op": "=", "args": [{"property": "collection"}, stac_collection]},
-                {"op": ">=", "args": [{"property": "datetime"}, start_date]},
-                {"op": "<=", "args": [{"property": "datetime"}, end_date]},
-            ],
-        },
-    )
-    items = sorted(search.items(), key=lambda item: item.datetime)
+    items = _get_data(aoi_polygon, start_date, end_date)
 
     # Calculating lulc change
-    classes_shares: list[dict[str, int]] = []
     stac_items: list[Item] = []
+    # Get unique classes
+    # For the first item only, the rest is the same
+    classes_orig_dict: list[dict[str, int | str]] = items[0].assets["GeoTIFF"].extra_fields["classification:classes"]
+    classes_unique_values: set[int] = {int(raster_value["value"]) for raster_value in classes_orig_dict}
 
     progress_bar = tqdm(items, desc="Processing items")
-    for idx, item in enumerate(progress_bar):
+    for item in progress_bar:
         progress_bar.set_description(f"Working with: {item.id}")
 
         # Get additional properties of the item
@@ -83,18 +68,18 @@ def generate_lulc_change(aoi: str, start_date: str, end_date: str) -> None:
             ),
         )
 
+        bounds_polygon = get_raster_bounds(raster_arr)
+        area_m2 = calculate_geodesic_area(bounds_polygon)
+
         # Count occurrences for each class
-        classes_shares.append(_get_counts_for_classes(raster_arr))
+        classes_shares: dict[str, float] = _get_shares_for_classes(raster_arr, classes_unique_values)
+        raster_arr.attrs["lulc_classes_percentage"] = classes_shares
+
+        classes_m2: dict[str, float] = _get_m2_for_classes(classes_shares, area_m2)
+        raster_arr.attrs["lulc_classes_m2"] = classes_m2
 
         # Save COG with lulc change values in metadata
-        # Change is calculated based on the previously processed item
-        if idx > 0:
-            change = _calculate_percentage_change(classes_shares[idx], classes_shares[idx - 1])
-            raster_arr.attrs["lulc_change_percentage"] = change
-            raster_path = save_cog(index_raster=raster_arr, item_id=item.id, output_dir=Path.cwd(), epsg=4326)
-        else:
-            change = {}
-            raster_path = save_cog(index_raster=raster_arr, item_id=item.id, output_dir=Path.cwd(), epsg=4326)
+        raster_path = save_cog(index_raster=raster_arr, item_id=item.id, output_dir=Path.cwd(), epsg=4326)
 
         # Create STAC definition for each item processed
         # Include lulc change in STAC item properties
@@ -102,57 +87,56 @@ def generate_lulc_change(aoi: str, start_date: str, end_date: str) -> None:
             prepare_stac_item(
                 file_path=raster_path,
                 id_item=item.id,
-                geometry=aoi_polygon,
+                geometry=bounds_polygon,
                 epsg=epsg,
                 transform=transform,
                 datetime=item.datetime,
                 start_datetime=item.properties.get("start_datetime"),
                 end_datetime=item.properties.get("end_datetime"),
-                additional_prop={"lulc_change_percentage": change},
+                additional_prop={"lulc_classes_percentage": classes_shares, "lulc_classes_m2": classes_m2},
+                asset_extra_fields={"classification:classes": classes_orig_dict},
             )
         )
 
     # Generate local STAC for processed data
-    generate_stac(items=stac_items, geometry=aoi_polygon, start_date=start_date, end_date=end_date)
+    generate_stac(items=stac_items, geometry=bounds_polygon, start_date=start_date, end_date=end_date)
 
 
-def _get_counts_for_classes(input_data: xarray.DataArray) -> dict[str, int]:
+def _get_data(aoi_polygon: Polygon, start_date: str, end_date: str) -> list[Item]:
+    # Connect to STAC API
+    catalog = Client.open(consts.stac.CEDA_CATALOG_API_ENDPOINT)
+    stac_collection = consts.stac.CEDA_ESACCI_LC_COLLECTION_NAME
+
+    # Querying the data
+    search = catalog.search(
+        filter_lang="cql2-json",
+        filter={
+            "op": "and",
+            "args": [
+                {"op": "s_intersects", "args": [{"property": "geometry"}, mapping(aoi_polygon)]},
+                {"op": "=", "args": [{"property": "collection"}, stac_collection]},
+                {"op": ">=", "args": [{"property": "datetime"}, start_date]},
+                {"op": "<=", "args": [{"property": "datetime"}, end_date]},
+            ],
+        },
+    )
+
+    return sorted(search.items(), key=lambda item: item.datetime)
+
+
+def _get_m2_for_classes(percentage_dict: dict[str, float], full_area_m2: float) -> dict[str, float]:
+    return {key: (value / 100) * full_area_m2 for key, value in percentage_dict.items()}
+
+
+def _get_shares_for_classes(input_data: xarray.DataArray, unique_values: set[int]) -> dict[str, float]:
     data = input_data.to_numpy()
-    unique_values, counts = np.unique(data, return_counts=True)
-    return dict(zip(unique_values, counts))
+    unique_values_for_array, counts = np.unique(data, return_counts=True)
 
+    counts_dict = {
+        str(int(value)): float(count / data.size) * 100 for value, count in zip(unique_values_for_array, counts)
+    }
 
-def _calculate_percentage_change(current_dict: dict[str, int], previous_dict: dict[str, int]) -> dict[str, float]:
-    """Calculates the percentage change of class counts between two dictionaries.
+    missing_values = unique_values.difference(set(unique_values_for_array))
+    counts_dict.update({str(value): 0.0 for value in missing_values})
 
-    Parameters:
-    current_dict (dict): Dictionary with current class counts (from current xarray).
-    previous_dict (dict): Dictionary with previous class counts (from previous xarray).
-
-    Returns:
-    dict: A dictionary with percentage changes for each class.
-
-    """
-    percentage_change = {}
-
-    # Pobieramy wszystkie unikalne klucze (klasy) z obu słowników
-    all_classes = set(current_dict.keys()).union(set(previous_dict.keys()))
-
-    for class_value in all_classes:
-        if class_value in current_dict and class_value in previous_dict:
-            # Class exists in both current and previous dictionaries
-            current_count = current_dict[class_value]
-            previous_count = previous_dict[class_value]
-
-            # Calculate the percentage change
-            change = ((current_count - previous_count) / previous_count) * 100
-            percentage_change[class_value] = change
-
-        elif class_value in current_dict and class_value not in previous_dict:
-            # Class appears only in the current dictionary (new class)
-            percentage_change[class_value] = 100
-        elif class_value not in current_dict and class_value in previous_dict:
-            # Class disappeared (exists only in the previous dictionary)
-            percentage_change[class_value] = -100
-
-    return percentage_change
+    return counts_dict

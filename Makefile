@@ -150,7 +150,7 @@ docker-run:
 		--name $(CONTAINER_NAME) $(IMAGE_NAME) \
 		/bin/bash
 
-.PHONY: docker-stop -## Stop Docker container
+.PHONY: docker-stop ## Stop Docker container
 docker-stop:
 	@echo "Stopping Docker container..."
 	docker stop $(CONTAINER_NAME)

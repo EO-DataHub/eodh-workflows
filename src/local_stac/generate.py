@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pystac
 from pystac.extensions.projection import ProjectionExtension
@@ -48,7 +48,8 @@ def prepare_stac_item(
     datetime: str,
     start_datetime: str,
     end_datetime: str,
-    additional_prop: dict[str, dict[str, float]],
+    additional_prop: dict[str, dict[str, Any]],
+    asset_extra_fields: dict[str, list[dict[str, Any]]],
 ) -> pystac.Item:
     item = pystac.Item(
         id=id_item,
@@ -65,6 +66,8 @@ def prepare_stac_item(
     projection.epsg = epsg
     projection.transform = transform
 
-    item.add_asset(key="data", asset=pystac.Asset(href=file_path, media_type=pystac.MediaType.COG))
+    item.add_asset(
+        key="data", asset=pystac.Asset(href=file_path, media_type=pystac.MediaType.COG, extra_fields=asset_extra_fields)
+    )
 
     return item
