@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+# CEDA
+CEDA_CATALOG_API_ENDPOINT = "https://api.stac.ceda.ac.uk/"
+CEDA_ESACCI_LC_COLLECTION_NAME = "land_cover"
+
+# Planetary Computer
 CATALOG_API_ENDPOINT = "https://planetarycomputer.microsoft.com/api/stac/v1"
 
 SENTINEL_1_GRD_COLLECTION_NAME = "sentinel-1-grd"
