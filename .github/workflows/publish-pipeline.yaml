@@ -43,16 +43,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set tag for Docker image
+        id: set-tag
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "TAGS=latest" >> $GITHUB_ENV
+          else
+            echo "TAGS=${{ github.ref_name }}" >> $GITHUB_ENV
+          fi
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            # use 'latest' for the default branch (main)
-            type=raw,value=latest,enable={{is_default_branch}}
-            # tag by branch name for non-main branches
-            type=ref,event=workflow_dispatch,enable={{is_not_default_branch}}
+          tags: ${{ env.TAGS }}
 
       - name: Build and push Docker image
         id: push
