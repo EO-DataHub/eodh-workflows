@@ -46,8 +46,8 @@ def prepare_stac_item(
     epsg: int,
     transform: list[float],
     datetime: str,
-    start_datetime: str,
-    end_datetime: str,
+    # start_datetime: str,
+    # end_datetime: str,
     additional_prop: dict[str, dict[str, Any]],
     asset_extra_fields: dict[str, list[dict[str, Any]]],
 ) -> pystac.Item:
@@ -56,8 +56,8 @@ def prepare_stac_item(
         geometry=mapping(geometry),
         bbox=geometry.bounds,
         datetime=datetime,
-        start_datetime=dt.datetime.fromisoformat(start_datetime),
-        end_datetime=dt.datetime.fromisoformat(end_datetime),
+        # start_datetime=dt.datetime.fromisoformat(start_datetime),
+        # end_datetime=dt.datetime.fromisoformat(end_datetime),
         properties=additional_prop,
     )
 

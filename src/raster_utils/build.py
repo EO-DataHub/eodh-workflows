@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 import stackstac
 
 from src import consts
+from src.data_helpers.sh_auth import sh_auth_token
+from src.data_helpers.sh_get_data import sh_get_data
 
 if TYPE_CHECKING:
     import xarray
@@ -12,12 +14,21 @@ if TYPE_CHECKING:
 
 
 def build_raster_array(
-    item: Item,
-    bbox: tuple[int | float, int | float, int | float, int | float],
-    assets: list[str],
-    epsg: int,
-    resolution: tuple[float, float],
+    source, item: Item, bbox: tuple[int | float, int | float, int | float, int | float]
 ) -> xarray.DataArray:
-    return stackstac.stack(
-        item, assets=assets, chunksize=consts.compute.CHUNK_SIZE, bounds_latlon=bbox, epsg=epsg, resolution=resolution
-    ).squeeze()
+    if source.catalog == consts.stac.CEDA_CATALOG_API_ENDPOINT:
+        return stackstac.stack(
+            item,
+            assets=["GeoTIFF"],
+            chunksize=consts.compute.CHUNK_SIZE,
+            bounds_latlon=bbox,
+            epsg=4326,
+            resolution=(
+                float(item.properties.get("geospatial_lon_resolution")),
+                float(item.properties.get("geospatial_lat_resolution")),
+            ),
+        ).squeeze()
+    if source.catalog == consts.stac.SH_CATALOG_API_ENDPOINT:
+        token = sh_auth_token()
+        return sh_get_data(token=token, source=source, bbox=bbox, stac_collection=source.collection, item_id=item.id)
+    raise ValueError("Unsupported STAC catalog")

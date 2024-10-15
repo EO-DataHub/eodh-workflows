@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -12,6 +13,8 @@ from shapely.geometry import Polygon, mapping
 from tqdm import tqdm
 
 from src import consts
+from src.data_helpers.get_classes_dicts import get_classes, get_classes_orig_dict
+from src.data_helpers.sh_auth import sh_auth_token
 from src.geom_utils.calculate import calculate_geodesic_area
 from src.geom_utils.transform import gejson_to_polygon
 from src.local_stac.generate import generate_stac, prepare_stac_item
@@ -27,46 +30,65 @@ if TYPE_CHECKING:
 _logger = get_logger(__name__)
 
 
+@dataclass
+class DataSource:
+    name: str
+    catalog: str
+    collection: str
+
+
+DATASOURCE_LOOKUP = {
+    consts.stac.CEDA_ESACCI_LC_LOCAL_NAME: DataSource(
+        name=consts.stac.CEDA_ESACCI_LC_LOCAL_NAME,
+        catalog=consts.stac.CEDA_CATALOG_API_ENDPOINT,
+        collection=consts.stac.CEDA_ESACCI_LC_COLLECTION_NAME,
+    ),
+    consts.stac.SH_CLMS_CORINELC_LOCAL_NAME: DataSource(
+        name=consts.stac.SH_CLMS_CORINELC_LOCAL_NAME,
+        catalog=consts.stac.SH_CATALOG_API_ENDPOINT,
+        collection=consts.stac.SH_CLMS_CORINELC_COLLECTION_NAME,
+    ),
+    consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME: DataSource(
+        name=consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME,
+        catalog=consts.stac.SH_CATALOG_API_ENDPOINT,
+        collection=consts.stac.SH_CLMS_WATER_BODIES_COLLECTION_NAME,
+    ),
+}
+
+
 @click.command(help="Generate LULC change")
+@click.option(
+    "--source",
+    type=click.Choice(DATASOURCE_LOOKUP.keys(), case_sensitive=True),
+    required=True,
+    help="Source dataset to use",
+)
 @click.option("--aoi", required=True, help="The area of interest as GeoJSON in EPSG:4326")
 @click.option("--start_date", required=True, help="Start date in ISO 8601 used to search input data")
 @click.option("--end_date", required=True, help="End date in ISO 8601 used to search input data")
-def generate_lulc_change(aoi: str, start_date: str, end_date: str) -> None:
+def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) -> None:
     _logger.info(
-        "Running with:\n%s", json.dumps({"aoi": aoi, "start_date": start_date, "end_date": end_date}, indent=4)
+        "Running with:\n%s",
+        json.dumps({"source": source, "aoi": aoi, "start_date": start_date, "end_date": end_date}, indent=4),
     )
-
+    source = DATASOURCE_LOOKUP[source]
     # Transferring the AOI
     aoi_polygon = gejson_to_polygon(aoi)
 
-    items = _get_data(aoi_polygon, start_date, end_date)
+    items = _get_data(source, aoi_polygon, start_date, end_date)
+
+    classes_orig_dict = get_classes_orig_dict(source, items[0])
+    classes_unique_values = get_classes(classes_orig_dict)
 
     # Calculating lulc change
     stac_items: list[Item] = []
-    # Get unique classes
-    # For the first item only, the rest is the same
-    classes_orig_dict: list[dict[str, int | str]] = items[0].assets["GeoTIFF"].extra_fields["classification:classes"]
-    classes_unique_values: set[int] = {int(raster_value["value"]) for raster_value in classes_orig_dict}
 
     progress_bar = tqdm(items, desc="Processing items")
     for item in progress_bar:
         progress_bar.set_description(f"Working with: {item.id}")
 
-        # Get additional properties of the item
-        epsg = int(item.properties.get("proj:code").replace("EPSG:", ""))
-        transform = item.properties.get("proj:transform")
-
         # Build array
-        raster_arr = build_raster_array(
-            item=item,
-            bbox=aoi_polygon.bounds,
-            epsg=epsg,
-            assets=["GeoTIFF"],
-            resolution=(
-                float(item.properties.get("geospatial_lon_resolution")),
-                float(item.properties.get("geospatial_lat_resolution")),
-            ),
-        )
+        raster_arr = build_raster_array(source=source, item=item, bbox=aoi_polygon.bounds)
 
         bounds_polygon = get_raster_bounds(raster_arr)
         area_m2 = calculate_geodesic_area(bounds_polygon)
@@ -88,11 +110,11 @@ def generate_lulc_change(aoi: str, start_date: str, end_date: str) -> None:
                 file_path=raster_path,
                 id_item=item.id,
                 geometry=bounds_polygon,
-                epsg=epsg,
-                transform=transform,
+                epsg=raster_arr.rio.crs.to_epsg(),
+                transform=list(raster_arr.rio.transform()),
                 datetime=item.datetime,
-                start_datetime=item.properties.get("start_datetime"),
-                end_datetime=item.properties.get("end_datetime"),
+                # start_datetime=item.properties.get("start_datetime"),
+                # end_datetime=item.properties.get("end_datetime"),
                 additional_prop={"lulc_classes_percentage": classes_shares, "lulc_classes_m2": classes_m2},
                 asset_extra_fields={"classification:classes": classes_orig_dict},
             )
@@ -102,23 +124,17 @@ def generate_lulc_change(aoi: str, start_date: str, end_date: str) -> None:
     generate_stac(items=stac_items, geometry=bounds_polygon, start_date=start_date, end_date=end_date)
 
 
-def _get_data(aoi_polygon: Polygon, start_date: str, end_date: str) -> list[Item]:
+def _get_data(source: DataSource, aoi_polygon: Polygon, start_date: str, end_date: str) -> list[Item]:
+    # Sentinel Hub requires authentication
+    token = sh_auth_token() if source.catalog == consts.stac.SH_CATALOG_API_ENDPOINT else None
+
     # Connect to STAC API
-    catalog = Client.open(consts.stac.CEDA_CATALOG_API_ENDPOINT)
-    stac_collection = consts.stac.CEDA_ESACCI_LC_COLLECTION_NAME
+    catalog = Client.open(source.catalog, headers={"Authorization": f"Bearer {token}"})
+    stac_collection = source.collection
 
     # Querying the data
     search = catalog.search(
-        filter_lang="cql2-json",
-        filter={
-            "op": "and",
-            "args": [
-                {"op": "s_intersects", "args": [{"property": "geometry"}, mapping(aoi_polygon)]},
-                {"op": "=", "args": [{"property": "collection"}, stac_collection]},
-                {"op": ">=", "args": [{"property": "datetime"}, start_date]},
-                {"op": "<=", "args": [{"property": "datetime"}, end_date]},
-            ],
-        },
+        collections=[stac_collection], datetime=f"{start_date}/{end_date}", intersects=mapping(aoi_polygon)
     )
 
     return sorted(search.items(), key=lambda item: item.datetime)
