@@ -71,13 +71,13 @@ def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) 
         "Running with:\n%s",
         json.dumps({"source": source, "aoi": aoi, "start_date": start_date, "end_date": end_date}, indent=4),
     )
-    source = DATASOURCE_LOOKUP[source]
+    source_ds: DataSource = DATASOURCE_LOOKUP[source]
     # Transferring the AOI
     aoi_polygon = gejson_to_polygon(aoi)
 
-    items = _get_data(source, aoi_polygon, start_date, end_date)
+    items = _get_data(source_ds, aoi_polygon, start_date, end_date)
 
-    classes_orig_dict = get_classes_orig_dict(source, items[0])
+    classes_orig_dict = get_classes_orig_dict(source_ds, items[0])
     classes_unique_values = get_classes(classes_orig_dict)
 
     # Calculating lulc change
@@ -88,7 +88,7 @@ def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) 
         progress_bar.set_description(f"Working with: {item.id}")
 
         # Build array
-        raster_arr = build_raster_array(source=source, item=item, bbox=aoi_polygon.bounds)
+        raster_arr = build_raster_array(source=source_ds, item=item, bbox=aoi_polygon.bounds)
 
         bounds_polygon = get_raster_bounds(raster_arr)
         area_m2 = calculate_geodesic_area(bounds_polygon)
@@ -113,8 +113,6 @@ def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) 
                 epsg=raster_arr.rio.crs.to_epsg(),
                 transform=list(raster_arr.rio.transform()),
                 datetime=item.datetime,
-                # start_datetime=item.properties.get("start_datetime"),
-                # end_datetime=item.properties.get("end_datetime"),
                 additional_prop={"lulc_classes_percentage": classes_shares, "lulc_classes_m2": classes_m2},
                 asset_extra_fields={"classification:classes": classes_orig_dict},
             )

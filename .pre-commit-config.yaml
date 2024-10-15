@@ -153,6 +153,8 @@ repos:
           - types-waitress
           - types-xxhash
           - types-tqdm
+          - types-requests-oauthlib
+          - types-oauthlib
 
   - repo: local
     hooks:

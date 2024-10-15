@@ -31,8 +31,6 @@ def test_prepare_stac_item(example_polygon: Polygon, example_path: Path, example
     id_item = "test-item"
     epsg = 4326
     datetime_str = "2023-09-27T10:00:00Z"
-    start_datetime = "2023-09-27T00:00:00Z"
-    end_datetime = "2023-09-28T00:00:00Z"
     additional_prop = {"key": {"subkey": "value"}}
     asset_extra_fields = {"field": [{"subfield": "value"}]}
 
@@ -44,8 +42,6 @@ def test_prepare_stac_item(example_polygon: Polygon, example_path: Path, example
         epsg=epsg,
         transform=example_transform,
         datetime=datetime_str,
-        start_datetime=start_datetime,
-        end_datetime=end_datetime,
         additional_prop=additional_prop,
         asset_extra_fields=asset_extra_fields,
     )
@@ -56,8 +52,6 @@ def test_prepare_stac_item(example_polygon: Polygon, example_path: Path, example
     assert item.bbox == example_polygon.bounds
     assert item.datetime == datetime_str
     assert item.properties == additional_prop
-    assert dt.datetime.fromisoformat(start_datetime) == item.common_metadata.start_datetime
-    assert dt.datetime.fromisoformat(end_datetime) == item.common_metadata.end_datetime
 
     # Check projection extension
     projection = pystac.extensions.projection.ProjectionExtension.ext(item)

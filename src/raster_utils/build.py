@@ -12,9 +12,11 @@ if TYPE_CHECKING:
     import xarray
     from pystac import Item
 
+    from src.workflows.lulc.generate_change import DataSource
+
 
 def build_raster_array(
-    source, item: Item, bbox: tuple[int | float, int | float, int | float, int | float]
+    source: DataSource, item: Item, bbox: tuple[int | float, int | float, int | float, int | float]
 ) -> xarray.DataArray:
     if source.catalog == consts.stac.CEDA_CATALOG_API_ENDPOINT:
         return stackstac.stack(
@@ -31,4 +33,5 @@ def build_raster_array(
     if source.catalog == consts.stac.SH_CATALOG_API_ENDPOINT:
         token = sh_auth_token()
         return sh_get_data(token=token, source=source, bbox=bbox, stac_collection=source.collection, item_id=item.id)
-    raise ValueError("Unsupported STAC catalog")
+    error_message = "Unsupported STAC catalog"
+    raise ValueError(error_message)

@@ -13,10 +13,19 @@ from src import consts
 if TYPE_CHECKING:
     from xarray import DataArray
 
+    from src.workflows.lulc.generate_change import DataSource
+
 EVALSCRIPT_MAPPING = {consts.stac.SH_CLMS_CORINELC_LOCAL_NAME: consts.sentinel_hub.SH_EVALSCRIPT_CORINELC}
+HTTP_OK = 200
 
 
-def sh_get_data(token: str, source, bbox: list[float], stac_collection: str, item_id: str) -> DataArray:
+def sh_get_data(
+    token: str,
+    source: DataSource,
+    bbox: tuple[int | float, int | float, int | float, int | float],
+    stac_collection: str,
+    item_id: str,
+) -> DataArray:
     process_api_url = consts.sentinel_hub.SH_PROCESS_API
 
     payload = {
@@ -37,11 +46,12 @@ def sh_get_data(token: str, source, bbox: list[float], stac_collection: str, ite
 
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-    response = requests.post(process_api_url, headers=headers, data=json.dumps(payload))
+    response = requests.post(process_api_url, headers=headers, data=json.dumps(payload), timeout=20)
 
     # Checking the response
-    if response.status_code == 200:
+    if response.status_code == HTTP_OK:
         # Load binary data without saving to disk
         cog_data = BytesIO(response.content)
         return rioxarray.open_rasterio(cog_data, chunks=consts.compute.CHUNK_SIZE)
-    print(f"Error: {response.status_code}, : {response.text}")
+    error_message = f"Error: {response.status_code}, : {response.text}"
+    raise requests.HTTPError(error_message)
