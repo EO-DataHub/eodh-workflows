@@ -9,7 +9,7 @@ from shapely.geometry import Polygon, mapping
 from pathlib import Path
 
 
-LOCAL_STAC_OUTPUT_DIR = Path.cwd()
+LOCAL_STAC_OUTPUT_DIR = Path.cwd() / "data" / "stac-catalog"
 
 def generate_stac(
     items: list[pystac.Item],
@@ -20,21 +20,19 @@ def generate_stac(
 ) -> None:
     catalog = pystac.Catalog(id="catalog", description=description)
 
-    collection = pystac.Collection(
-        id="collection",
-        description=description,
-        extent=pystac.Extent(
-            spatial=pystac.SpatialExtent([list(geometry.bounds)]),
-            temporal=pystac.TemporalExtent([
-                [dt.datetime.fromisoformat(start_date), dt.datetime.fromisoformat(end_date)]
-            ]),
-        ),
-    )
-
-    catalog.add_child(collection)
+    # collection = pystac.Collection(
+    #     id="collection",
+    #     description=description,
+    #     extent=pystac.Extent(
+    #         spatial=pystac.SpatialExtent([list(geometry.bounds)]),
+    #         temporal=pystac.TemporalExtent([
+    #             [dt.datetime.fromisoformat(start_date), dt.datetime.fromisoformat(end_date)]
+    #         ]),
+    #     ),
+    # )
 
     for item in items:
-        collection.add_item(item)
+        catalog.add_item(item)
 
     LOCAL_STAC_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     catalog.normalize_and_save(str(LOCAL_STAC_OUTPUT_DIR), catalog_type=pystac.CatalogType.SELF_CONTAINED)
@@ -64,7 +62,7 @@ def prepare_stac_item(
     projection.transform = transform
 
     item.add_asset(
-        key="data", asset=pystac.Asset(href=f"../../{file_path.name}", media_type=pystac.MediaType.COG, extra_fields=asset_extra_fields)
+        key="data", asset=pystac.Asset(href=f"../{file_path.name}", media_type=pystac.MediaType.COG, extra_fields=asset_extra_fields)
     )
 
     return item

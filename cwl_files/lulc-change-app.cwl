@@ -88,4 +88,4 @@ $graph:
       results:
         type: Directory
         outputBinding:
-          glob: ./data/stac-catalog
+          glob: ./data/stac-catalog/
