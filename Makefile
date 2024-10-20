@@ -153,20 +153,40 @@ docker-run:
 .PHONY: docker-stop ## Stop Docker container
 docker-stop:
 	@echo "Stopping Docker container..."
-	docker stop $(CONTAINER_NAME)
+	@if [ "$(shell docker ps -q -f name=$(CONTAINER_NAME))" ]; then \
+		docker stop $(CONTAINER_NAME); \
+		echo "Docker container $(CONTAINER_NAME) stopped."; \
+	else \
+		echo "Docker container $(CONTAINER_NAME) does not exist or is not running."; \
+	fi
 
 .PHONY: docker-rm  ## Remove Docker container
 docker-rm:
 	@echo "Removing Docker container..."
-	docker rm $(CONTAINER_NAME)
+	@if [ "$(shell docker ps -a -q -f name=$(CONTAINER_NAME))" ]; then \
+		docker rm $(CONTAINER_NAME); \
+		echo "Docker container $(CONTAINER_NAME) removed."; \
+	else \
+		echo "Docker container $(CONTAINER_NAME) does not exist."; \
+	fi
 
 .PHONY: docker-rmi  ## Remove Docker image
 docker-rmi:
 	@echo "Removing Docker image..."
-	docker rmi $(IMAGE_NAME)
+	@if [ "$(shell docker images -q $(IMAGE_NAME))" ]; then \
+		docker rmi $(IMAGE_NAME); \
+		echo "Docker image $(IMAGE_NAME) removed."; \
+	else \
+		echo "Docker image $(IMAGE_NAME) does not exist."; \
+	fi
+
+.PHONY: docker-prune  ## Clean build cache
+docker-prune:
+	@echo "Cleaning build cache..."
+	docker builder prune --force
 
 .PHONY: docker-clean  ## Clean up everything (container and image)
-docker-clean: docker-stop docker-rm docker-rmi
+docker-clean: docker-stop docker-rm docker-rmi docker-prune
 
 .PHONY: docker-rebuild  ## Rebuild and rerun Docker container
 docker-rebuild: docker-clean docker-all
