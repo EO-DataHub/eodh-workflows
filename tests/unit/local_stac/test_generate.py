@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime as dt
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -31,8 +30,6 @@ def test_prepare_stac_item(example_polygon: Polygon, example_path: Path, example
     id_item = "test-item"
     epsg = 4326
     datetime_str = "2023-09-27T10:00:00Z"
-    start_datetime = "2023-09-27T00:00:00Z"
-    end_datetime = "2023-09-28T00:00:00Z"
     additional_prop = {"key": {"subkey": "value"}}
     asset_extra_fields = {"field": [{"subfield": "value"}]}
 
@@ -44,8 +41,6 @@ def test_prepare_stac_item(example_polygon: Polygon, example_path: Path, example
         epsg=epsg,
         transform=example_transform,
         datetime=datetime_str,
-        start_datetime=start_datetime,
-        end_datetime=end_datetime,
         additional_prop=additional_prop,
         asset_extra_fields=asset_extra_fields,
     )
@@ -56,8 +51,6 @@ def test_prepare_stac_item(example_polygon: Polygon, example_path: Path, example
     assert item.bbox == example_polygon.bounds
     assert item.datetime == datetime_str
     assert item.properties == additional_prop
-    assert dt.datetime.fromisoformat(start_datetime) == item.common_metadata.start_datetime
-    assert dt.datetime.fromisoformat(end_datetime) == item.common_metadata.end_datetime
 
     # Check projection extension
     projection = pystac.extensions.projection.ProjectionExtension.ext(item)
@@ -67,7 +60,7 @@ def test_prepare_stac_item(example_polygon: Polygon, example_path: Path, example
     # Check asset
     assert "data" in item.assets
     asset = item.assets["data"]
-    assert asset.href == example_path.as_posix()
+    assert asset.href == f"../{example_path.name}"
     assert asset.media_type == pystac.MediaType.COG
     assert asset.extra_fields == asset_extra_fields
 
@@ -86,58 +79,32 @@ def example_items() -> list[pystac.Item]:
 
 # Mock pystac.Catalog and pystac.Collection classes using @patch
 @patch("pystac.Catalog")
-@patch("pystac.Collection")
-def test_generate_stac(
-    mock_collection_class: MagicMock,
-    mock_catalog_class: MagicMock,
-    example_items: list[pystac.Item],
-    example_polygon: Polygon,
-) -> None:
+def test_generate_stac(mock_catalog_class: MagicMock, example_items: list[pystac.Item]) -> None:
     # Mocking required data
-    start_date = "2023-09-27T00:00:00Z"
-    end_date = "2023-09-28T00:00:00Z"
+    title = "Test Catalog Title"
     description = "Test Catalog"
 
-    # Create mock catalog and collection instances
+    # Create mock catalog instances
     mock_catalog_instance = mock_catalog_class.return_value
-    mock_collection_instance = mock_collection_class.return_value
 
-    # Create mock catalog and collection instances
+    # Create mock catalog instances
     mock_catalog_instance = mock_catalog_class.return_value
-    mock_collection_instance = mock_collection_class.return_value
 
     # Call the function
     generate_stac(
         items=example_items,
-        geometry=example_polygon,
-        start_date=start_date,
-        end_date=end_date,
+        title=title,
         description=description,
     )
 
     # Check if Catalog was created with correct parameters
-    mock_catalog_class.assert_called_once_with(id="catalog", description=description)
-
-    # Manually verify the extent instead of comparing object instances
-    _, called_kwargs = mock_collection_class.call_args
-    extent = called_kwargs["extent"]
-
-    # Verify spatial extent
-    assert extent.spatial.bboxes[0] == list(example_polygon.bounds)
-
-    # Verify temporal extent
-    temporal_extent = extent.temporal.intervals[0]
-    assert temporal_extent[0] == dt.datetime.fromisoformat(start_date)
-    assert temporal_extent[1] == dt.datetime.fromisoformat(end_date)
-
-    # Check if the collection was added to the catalog
-    mock_catalog_instance.add_child.assert_called_once_with(mock_collection_instance)
+    mock_catalog_class.assert_called_once_with(id="catalog", title=title, description=description)
 
     # Check if items were added to the collection
     for item in example_items:
-        mock_collection_instance.add_item.assert_any_call(item)
+        mock_catalog_instance.add_item.assert_any_call(item)
 
     # Check if normalize_and_save was called with the correct arguments
     mock_catalog_instance.normalize_and_save.assert_called_once_with(
-        "stac-catalog", catalog_type=pystac.CatalogType.SELF_CONTAINED
+        str(Path.cwd() / "data" / "stac-catalog"), catalog_type=pystac.CatalogType.SELF_CONTAINED
     )
