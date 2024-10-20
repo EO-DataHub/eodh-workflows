@@ -189,4 +189,4 @@ docker-prune:
 docker-clean: docker-stop docker-rm docker-rmi docker-prune
 
 .PHONY: docker-rebuild  ## Rebuild and rerun Docker container
-docker-rebuild: docker-clean docker-all
+docker-rebuild: docker-stop docker-rm docker-rmi docker-all

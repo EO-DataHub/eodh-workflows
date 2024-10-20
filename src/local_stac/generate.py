@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pystac
 from pystac.extensions.projection import ProjectionExtension
 from shapely.geometry import Polygon, mapping
 from pathlib import Path
 
+
+LOCAL_STAC_OUTPUT_DIR = Path.cwd() / "data" / "stac-catalog"
 
 def generate_stac(
     items: list[pystac.Item],
@@ -34,7 +36,8 @@ def generate_stac(
     for item in items:
         collection.add_item(item)
 
-    catalog.normalize_and_save(str(Path.cwd() / "data" / "stac-catalog"), catalog_type=pystac.CatalogType.RELATIVE_PUBLISHED)
+    LOCAL_STAC_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    catalog.normalize_and_save(str(LOCAL_STAC_OUTPUT_DIR), catalog_type=pystac.CatalogType.SELF_CONTAINED)
 
 
 def prepare_stac_item(
@@ -61,7 +64,7 @@ def prepare_stac_item(
     projection.transform = transform
 
     item.add_asset(
-        key="data", asset=pystac.Asset(href=file_path, media_type=pystac.MediaType.COG, extra_fields=asset_extra_fields)
+        key="data", asset=pystac.Asset(href=f"../../{file_path.name}", media_type=pystac.MediaType.COG, extra_fields=asset_extra_fields)
     )
 
     return item
