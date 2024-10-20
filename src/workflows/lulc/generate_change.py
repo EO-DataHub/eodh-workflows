@@ -101,7 +101,7 @@ def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) 
         raster_arr.attrs["lulc_classes_m2"] = classes_m2
 
         # Save COG with lulc change values in metadata
-        raster_path = save_cog(index_raster=raster_arr, item_id=item.id, output_dir=Path.cwd(), epsg=4326)
+        raster_path = save_cog(index_raster=raster_arr, item_id=item.id, epsg=4326)
 
         # Create STAC definition for each item processed
         # Include lulc change in STAC item properties

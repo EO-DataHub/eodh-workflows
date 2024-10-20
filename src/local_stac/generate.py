@@ -6,9 +6,7 @@ from typing import TYPE_CHECKING, Any
 import pystac
 from pystac.extensions.projection import ProjectionExtension
 from shapely.geometry import Polygon, mapping
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from pathlib import Path
 
 
 def generate_stac(
@@ -36,7 +34,7 @@ def generate_stac(
     for item in items:
         collection.add_item(item)
 
-    catalog.normalize_and_save("stac-catalog", catalog_type=pystac.CatalogType.SELF_CONTAINED)
+    catalog.normalize_and_save(str(Path.cwd() / "data" / "stac-catalog"), catalog_type=pystac.CatalogType.RELATIVE_PUBLISHED)
 
 
 def prepare_stac_item(
