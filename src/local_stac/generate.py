@@ -9,7 +9,7 @@ from shapely.geometry import Polygon, mapping
 from pathlib import Path
 
 
-LOCAL_STAC_OUTPUT_DIR = Path.cwd() / "data" / "stac-catalog"
+LOCAL_STAC_OUTPUT_DIR = Path.cwd()
 
 def generate_stac(
     items: list[pystac.Item],
