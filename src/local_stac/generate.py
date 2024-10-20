@@ -1,35 +1,24 @@
 from __future__ import annotations
 
-import datetime as dt
+from pathlib import Path
 from typing import Any
 
 import pystac
 from pystac.extensions.projection import ProjectionExtension
 from shapely.geometry import Polygon, mapping
-from pathlib import Path
-
 
 LOCAL_STAC_OUTPUT_DIR = Path.cwd() / "data" / "stac-catalog"
 
+
 def generate_stac(
     items: list[pystac.Item],
-    geometry: Polygon,
-    start_date: str,
-    end_date: str,
+    title: str = "Catalog",
     description: str = "Outputs from the job processed on ADES",
 ) -> None:
-    catalog = pystac.Catalog(id="catalog", description=description)
+    catalog = pystac.Catalog(id="catalog", title=title, description=description)
 
-    # collection = pystac.Collection(
-    #     id="collection",
-    #     description=description,
-    #     extent=pystac.Extent(
-    #         spatial=pystac.SpatialExtent([list(geometry.bounds)]),
-    #         temporal=pystac.TemporalExtent([
-    #             [dt.datetime.fromisoformat(start_date), dt.datetime.fromisoformat(end_date)]
-    #         ]),
-    #     ),
-    # )
+    # Adding a collection is not supported by ADES
+    # https://github.com/EO-DataHub/platform-bugs/issues/31
 
     for item in items:
         catalog.add_item(item)
@@ -62,7 +51,10 @@ def prepare_stac_item(
     projection.transform = transform
 
     item.add_asset(
-        key="data", asset=pystac.Asset(href=f"../{file_path.name}", media_type=pystac.MediaType.COG, extra_fields=asset_extra_fields)
+        key="data",
+        asset=pystac.Asset(
+            href=f"../{file_path.name}", media_type=pystac.MediaType.COG, extra_fields=asset_extra_fields
+        ),
     )
 
     return item

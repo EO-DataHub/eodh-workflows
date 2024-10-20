@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import click
@@ -67,9 +66,10 @@ DATASOURCE_LOOKUP = {
 @click.option("--start_date", required=True, help="Start date in ISO 8601 used to search input data")
 @click.option("--end_date", required=True, help="End date in ISO 8601 used to search input data")
 def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) -> None:
+    initial_arguments = {"source": source, "aoi": aoi, "start_date": start_date, "end_date": end_date}
     _logger.info(
         "Running with:\n%s",
-        json.dumps({"source": source, "aoi": aoi, "start_date": start_date, "end_date": end_date}, indent=4),
+        json.dumps(initial_arguments, indent=4),
     )
     source_ds: DataSource = DATASOURCE_LOOKUP[source]
     # Transferring the AOI
@@ -119,7 +119,7 @@ def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) 
         )
 
     # Generate local STAC for processed data
-    generate_stac(items=stac_items, geometry=bounds_polygon, start_date=start_date, end_date=end_date)
+    generate_stac(items=stac_items, title="eodh lulc change", description=json.dumps(initial_arguments))
 
 
 def _get_data(source: DataSource, aoi_polygon: Polygon, start_date: str, end_date: str) -> list[Item]:
