@@ -15,6 +15,10 @@ $graph:
         coresMax: 1
         ramMax: 1024
     inputs:
+      source:
+        label: source
+        doc: data source to be processed
+        type: string
       aoi:
         label: aoi
         doc: area of interest as GeoJSON
@@ -37,6 +41,7 @@ $graph:
       change:
         run: "#change"
         in:
+          source: source
           aoi: aoi
           start_date: start_date
           end_date: end_date
@@ -49,25 +54,34 @@ $graph:
       ResourceRequirement:
         coresMax: 1
         ramMax: 512
+      EnvVarRequirement:
+        envDef:
+          SH_CLIENT_ID: overwrite_with_your_value
+          SH_SECRET: overwrite_with_your_value
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
     baseCommand: ["eodh", "lulc", "change"]
     inputs:
-      aoi:
+      source:
         type: string
         inputBinding:
           position: 2
+          prefix: --source
+      aoi:
+        type: string
+        inputBinding:
+          position: 3
           prefix: --aoi
       start_date:
         type: string
         inputBinding:
-          position: 3
+          position: 4
           prefix: --start_date
       end_date:
         type: string
         inputBinding:
-          position: 4
+          position: 5
           prefix: --end_date
 
     outputs:
