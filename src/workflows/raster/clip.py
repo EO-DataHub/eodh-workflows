@@ -37,20 +37,20 @@ def clip_raster(fp: Path, aoi: dict[str, Any], output_dir: Path) -> Path:
     return output_dir / fp.name
 
 
-@click.command(help="Calculate spectral index")
+@click.command(help="Clip (crop) raster to specified AOI.")
 @click.option(
     "--stac_item_spec",
     required=True,
     type=click.Path(path_type=Path),  # type: ignore[type-var]
-    help="The name of the STAC collection to get the data from",
+    help="The STAC item metadata associated with raster file",
 )
 @click.option(
     "--raster",
     required=True,
     type=click.Path(path_type=Path),  # type: ignore[type-var]
-    help="The name of the STAC collection to get the data from",
+    help="GeoTiff raster file to clip",
 )
-@click.option("--aoi", required=True, help="Area of Interest as GeoJSON")
+@click.option("--aoi", required=True, help="Area of Interest as GeoJSON to be used for clipping")
 @click.option(
     "--output_dir",
     type=click.Path(path_type=Path),  # type: ignore[type-var]
