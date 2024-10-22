@@ -56,8 +56,8 @@ $graph:
         ramMax: 512
       EnvVarRequirement:
         envDef:
-          SH_CLIENT_ID: overwrite_with_your_value
-          SH_SECRET: overwrite_with_your_value
+          SH_CLIENT_ID: <<SENTINEL_HUB__CLIENT_ID>>
+          SH_SECRET: <<SENTINEL_HUB__CLIENT_SECRET>>
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
