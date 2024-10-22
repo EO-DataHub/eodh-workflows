@@ -71,3 +71,24 @@ SH_CLASSES_DICT_CORINELC = [
     {"value": 44, "description": "Sea and ocean", "color-hint": "e6f2ff"},
     {"value": 48, "description": "NODATA", "color-hint": "ffffff"},
 ]
+
+SH_EVALSCRIPT_WATERBODIES = """
+    function setup() {
+        return {
+            input: ["WB"],
+            output: {
+                bands: 1,
+                sampleType: "UINT16"
+            }
+        };
+    }
+
+    function evaluatePixel(sample) {
+        return [sample.WB];
+    }
+"""
+SH_CLASSES_DICT_WATERBODIES = [
+    {"value": 70, "description": "Water body", "color-hint": "0000ff"},
+]
+
+SH_NODATA_WATERBODIES = 251

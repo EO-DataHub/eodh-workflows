@@ -15,6 +15,8 @@ def get_classes_orig_dict(source: DataSource, item: Item) -> list[dict[str, int 
         return cast(list[dict[str, int | str]], item.assets["GeoTIFF"].extra_fields["classification:classes"])
     if source.name == consts.stac.SH_CLMS_CORINELC_LOCAL_NAME:
         return cast(list[dict[str, int | str]], consts.sentinel_hub.SH_CLASSES_DICT_CORINELC)
+    if source.name == consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME:
+        return cast(list[dict[str, int | str]], consts.sentinel_hub.SH_CLASSES_DICT_WATERBODIES)
     error_message = f"Unsupported data source: {source.name}"
     raise ValueError(error_message)
 

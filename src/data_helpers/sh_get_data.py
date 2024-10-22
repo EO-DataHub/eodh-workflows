@@ -15,7 +15,10 @@ if TYPE_CHECKING:
 
     from src.workflows.lulc.generate_change import DataSource
 
-EVALSCRIPT_MAPPING = {consts.stac.SH_CLMS_CORINELC_LOCAL_NAME: consts.sentinel_hub.SH_EVALSCRIPT_CORINELC}
+EVALSCRIPT_MAPPING = {
+    consts.stac.SH_CLMS_CORINELC_LOCAL_NAME: consts.sentinel_hub.SH_EVALSCRIPT_CORINELC,
+    consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME: consts.sentinel_hub.SH_EVALSCRIPT_WATERBODIES,
+}
 HTTP_OK = 200
 
 
@@ -52,6 +55,11 @@ def sh_get_data(
     if response.status_code == HTTP_OK:
         # Load binary data without saving to disk
         cog_data = BytesIO(response.content)
-        return rioxarray.open_rasterio(cog_data, chunks=consts.compute.CHUNK_SIZE)
+        data_arr = rioxarray.open_rasterio(cog_data, chunks=consts.compute.CHUNK_SIZE)
+
+        if source.name == consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME:
+            data_arr = data_arr.rio.write_nodata(consts.sentinel_hub.SH_NODATA_WATERBODIES)
+
+        return data_arr
     error_message = f"Error: {response.status_code}, : {response.text}"
     raise requests.HTTPError(error_message)
