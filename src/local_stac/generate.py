@@ -56,5 +56,9 @@ def prepare_stac_item(
             href=f"../{file_path.name}", media_type=pystac.MediaType.COG, extra_fields=asset_extra_fields
         ),
     )
+    if (LOCAL_STAC_OUTPUT_DIR / f"{file_path.stem}.png").exists():
+        item.add_asset(
+            key="thumbnail", asset=pystac.Asset(href=f"../{file_path.stem}.png", media_type=pystac.MediaType.PNG)
+        )
 
     return item

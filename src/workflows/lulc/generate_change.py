@@ -20,6 +20,7 @@ from src.local_stac.generate import generate_stac, prepare_stac_item
 from src.raster_utils.build import build_raster_array
 from src.raster_utils.helpers import get_raster_bounds
 from src.raster_utils.save import save_cog
+from src.raster_utils.thumbnail import generate_thumbnail
 from src.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -102,6 +103,7 @@ def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) 
 
         # Save COG with lulc change values in metadata
         raster_path = save_cog(index_raster=raster_arr, item_id=item.id, epsg=4326)
+        generate_thumbnail(raster_arr, raster_path=raster_path, classes_list=classes_orig_dict)
 
         # Create STAC definition for each item processed
         # Include lulc change in STAC item properties
