@@ -179,3 +179,4 @@ mlruns/
 !/notebooks/.gitkeep
 /cwl_files/local/*
 !/cwl_files/local/.gitkeep
+/stac-catalog/
