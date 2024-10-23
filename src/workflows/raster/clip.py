@@ -7,8 +7,10 @@ from typing import Any
 import click
 import numpy as np
 import rasterio
+import rasterio.features
 import rasterio.mask
 from osgeo import gdal
+from shapely.geometry.geo import box, mapping
 
 from src.utils.logging import get_logger
 
@@ -35,6 +37,15 @@ def clip_raster(fp: Path, aoi: dict[str, Any], output_dir: Path) -> Path:
         dest.write(out_image)
 
     return output_dir / fp.name
+
+
+def update_item_with_new_footprint(stac_item_spec: dict[str, Any], aoi_polygon: dict[str, Any]) -> dict[str, Any]:
+    bbox = rasterio.features.bounds(aoi_polygon)
+    footprint_poly = box(*bbox)
+    footprint = mapping(footprint_poly)
+    stac_item_spec["bbox"] = bbox
+    stac_item_spec["geometry"] = footprint
+    return stac_item_spec
 
 
 @click.command(help="Clip (crop) raster to specified AOI.")
@@ -76,6 +87,14 @@ def clip(
     )
     output_dir = output_dir or Path.cwd()
 
+    # Clip
     aoi_polygon = json.loads(aoi)
     clip_raster(fp=raster, output_dir=output_dir, aoi=aoi_polygon)
-    (output_dir / stac_item_spec.name).write_text(stac_item_spec.read_text(encoding="utf-8"), encoding="utf-8")
+
+    # Update Item spec with new footprint and bbox
+    item = update_item_with_new_footprint(
+        stac_item_spec=json.loads(stac_item_spec.read_text(encoding="utf-8")),
+        aoi_polygon=aoi_polygon,
+    )
+
+    (output_dir / stac_item_spec.name).write_text(json.dumps(item, indent=4), encoding="utf-8")
