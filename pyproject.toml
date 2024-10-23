@@ -33,7 +33,7 @@ license = { text = "MIT" }
 Homepage = 'https://github.com/EO-DataHub/eodh-workflows'
 
 [tool.setuptools.dynamic]
-readme = {file = ["README.md"]}
+readme = { file = ["README.md"] }
 
 [project.scripts]
 eodh = "src.workflows.entrypoint:cli"
@@ -105,18 +105,18 @@ select = [
     "RUF", # Ruff-specific rules
 ]
 ignore = [
-    "ANN101",  # see: https://pypi.org/project/flake8-annotations - Missing type annotation for self in method
-    "ANN102",  # see: https://pypi.org/project/flake8-annotations - Missing type annotation for cls in method
-    "ANN401",  # see: https://pypi.org/project/flake8-annotations - Dynamically typed expressions (typing.Any) are disallowed
-    "D1",  # see: https://pypi.org/project/pydocstyle - D1 - undocumented public member - too restrictive
-    "COM",  # see: https://pypi.org/project/flake8-commas - conflicts with formatter
-    "ISC",  # see: https://pypi.org/project/flake8-implicit-str-concat - conflicts with formatter
-    "CPY",  # see: https://pypi.org/project/flake8-copyright - not used
-    "DJ",  # see: https://pypi.org/project/flake8-django - not used
-    "TD",  # see: https://pypi.org/project/flake8-todos - too restrictive
-    "FIX",  # see: https://pypi.org/project/flake8-fixme - too restrictive
-    "PLR0913",  # see: https://pypi.org/project/Pylint - Too many arguments in function definition
-    "PLR0917",  # see: https://pypi.org/project/Pylint - Too many positional arguments
+    "ANN101", # see: https://pypi.org/project/flake8-annotations - Missing type annotation for self in method
+    "ANN102", # see: https://pypi.org/project/flake8-annotations - Missing type annotation for cls in method
+    "ANN401", # see: https://pypi.org/project/flake8-annotations - Dynamically typed expressions (typing.Any) are disallowed
+    "D1", # see: https://pypi.org/project/pydocstyle - D1 - undocumented public member - too restrictive
+    "COM", # see: https://pypi.org/project/flake8-commas - conflicts with formatter
+    "ISC", # see: https://pypi.org/project/flake8-implicit-str-concat - conflicts with formatter
+    "CPY", # see: https://pypi.org/project/flake8-copyright - not used
+    "DJ", # see: https://pypi.org/project/flake8-django - not used
+    "TD", # see: https://pypi.org/project/flake8-todos - too restrictive
+    "FIX", # see: https://pypi.org/project/flake8-fixme - too restrictive
+    "PLR0913", # see: https://pypi.org/project/Pylint - Too many arguments in function definition
+    "PLR0917", # see: https://pypi.org/project/Pylint - Too many positional arguments
 ]
 
 [tool.ruff.format]
@@ -188,8 +188,10 @@ plugins = "numpy.typing.mypy_plugin"
 
 [[tool.mypy.overrides]]
 module = [
+    "affine.*",
     "mkdocs_gen_files.*",
     "pandas.*",
+    "osgeo.*",
     "planetary_computer.*",
     "pydantic.*",
     "pydantic_settings.*",
