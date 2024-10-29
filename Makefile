@@ -197,21 +197,21 @@ cwl-corinelc:
 	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
 		--source clms-corinelc \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
-		--start_date 2006-01-01T00:00:00Z \
-		--end_date 2018-12-31T23:59:59Z
+		--date_start 2006-01-01T00:00:00Z \
+		--date_end 2018-12-31T23:59:59Z
 
 .PHONY: cwl-globallc
 cwl-globallc:
 	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
 		--source esacci-globallc \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
-		--start_date 2008-01-01T00:00:00Z \
-		--end_date 2010-12-31T23:59:59Z
+		--date_start 2008-01-01T00:00:00Z \
+		--date_end 2010-12-31T23:59:59Z
 
 .PHONY: cwl-water-bodies
 cwl-water-bodies:
 	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
 		--source clms-water-bodies \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
-		--start_date 2024-01-01T00:00:00Z \
-		--end_date 2024-03-31T23:59:59Z
+		--date_start 2024-01-01T00:00:00Z \
+		--date_end 2024-03-31T23:59:59Z

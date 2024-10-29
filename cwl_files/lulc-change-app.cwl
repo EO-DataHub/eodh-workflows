@@ -23,11 +23,11 @@ $graph:
         label: aoi
         doc: area of interest as GeoJSON
         type: string
-      start_date:
+      date_start:
         label: start date
         doc: start date for data queries in ISO 8601
         type: string
-      end_date:
+      date_end:
         label: end date
         doc: end date for data queries in ISO 8601
         type: string
@@ -43,8 +43,8 @@ $graph:
         in:
           source: source
           aoi: aoi
-          start_date: start_date
-          end_date: end_date
+          date_start: date_start
+          date_end: date_end
         out:
           - results
   # change
@@ -73,16 +73,16 @@ $graph:
         inputBinding:
           position: 3
           prefix: --aoi
-      start_date:
+      date_start:
         type: string
         inputBinding:
           position: 4
-          prefix: --start_date
-      end_date:
+          prefix: --date_start
+      date_end:
         type: string
         inputBinding:
           position: 5
-          prefix: --end_date
+          prefix: --date_end
 
     outputs:
       results:

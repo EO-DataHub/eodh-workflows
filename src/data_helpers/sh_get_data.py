@@ -28,6 +28,7 @@ def sh_get_data(
     bbox: tuple[int | float, int | float, int | float, int | float],
     stac_collection: str,
     item_id: str,
+    timeout: int = 20,
 ) -> DataArray:
     process_api_url = consts.sentinel_hub.SH_PROCESS_API
 
@@ -49,7 +50,7 @@ def sh_get_data(
 
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-    response = requests.post(process_api_url, headers=headers, data=json.dumps(payload), timeout=20)
+    response = requests.post(process_api_url, headers=headers, data=json.dumps(payload), timeout=timeout)
 
     # Checking the response
     if response.status_code == HTTP_OK:

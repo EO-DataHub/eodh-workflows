@@ -64,10 +64,10 @@ DATASOURCE_LOOKUP = {
     help="Source dataset to use",
 )
 @click.option("--aoi", required=True, help="The area of interest as GeoJSON in EPSG:4326")
-@click.option("--start_date", required=True, help="Start date in ISO 8601 used to search input data")
-@click.option("--end_date", required=True, help="End date in ISO 8601 used to search input data")
-def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) -> None:
-    initial_arguments = {"source": source, "aoi": aoi, "start_date": start_date, "end_date": end_date}
+@click.option("--date_start", required=True, help="Start date in ISO 8601 used to search input data")
+@click.option("--date_end", required=True, help="End date in ISO 8601 used to search input data")
+def generate_lulc_change(source: str, aoi: str, date_start: str, date_end: str) -> None:
+    initial_arguments = {"source": source, "aoi": aoi, "date_start": date_start, "date_end": date_end}
     _logger.info(
         "Running with:\n%s",
         json.dumps(initial_arguments, indent=4),
@@ -76,7 +76,7 @@ def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) 
     # Transferring the AOI
     aoi_polygon = gejson_to_polygon(aoi)
 
-    items = _get_data(source_ds, aoi_polygon, start_date, end_date)
+    items = _get_data(source_ds, aoi_polygon, date_start, date_end)
 
     classes_orig_dict = get_classes_orig_dict(source_ds, items[0])
     classes_unique_values = get_classes(classes_orig_dict)
@@ -124,7 +124,7 @@ def generate_lulc_change(source: str, aoi: str, start_date: str, end_date: str) 
     generate_stac(items=stac_items, title="eodh lulc change", description=json.dumps(initial_arguments))
 
 
-def _get_data(source: DataSource, aoi_polygon: Polygon, start_date: str, end_date: str) -> list[Item]:
+def _get_data(source: DataSource, aoi_polygon: Polygon, date_start: str, date_end: str) -> list[Item]:
     # Sentinel Hub requires authentication
     token = sh_auth_token() if source.catalog == consts.stac.SH_CATALOG_API_ENDPOINT else None
 
@@ -134,7 +134,7 @@ def _get_data(source: DataSource, aoi_polygon: Polygon, start_date: str, end_dat
 
     # Querying the data
     search = catalog.search(
-        collections=[stac_collection], datetime=f"{start_date}/{end_date}", intersects=mapping(aoi_polygon)
+        collections=[stac_collection], datetime=f"{date_start}/{date_end}", intersects=mapping(aoi_polygon)
     )
 
     return sorted(search.items(), key=lambda item: item.datetime)
