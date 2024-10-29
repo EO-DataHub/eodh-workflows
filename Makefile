@@ -153,20 +153,65 @@ docker-run:
 .PHONY: docker-stop ## Stop Docker container
 docker-stop:
 	@echo "Stopping Docker container..."
-	docker stop $(CONTAINER_NAME)
+	@if [ "$(shell docker ps -q -f name=$(CONTAINER_NAME))" ]; then \
+		docker stop $(CONTAINER_NAME); \
+		echo "Docker container $(CONTAINER_NAME) stopped."; \
+	else \
+		echo "Docker container $(CONTAINER_NAME) does not exist or is not running."; \
+	fi
 
 .PHONY: docker-rm  ## Remove Docker container
 docker-rm:
 	@echo "Removing Docker container..."
-	docker rm $(CONTAINER_NAME)
+	@if [ "$(shell docker ps -a -q -f name=$(CONTAINER_NAME))" ]; then \
+		docker rm $(CONTAINER_NAME); \
+		echo "Docker container $(CONTAINER_NAME) removed."; \
+	else \
+		echo "Docker container $(CONTAINER_NAME) does not exist."; \
+	fi
 
 .PHONY: docker-rmi  ## Remove Docker image
 docker-rmi:
 	@echo "Removing Docker image..."
-	docker rmi $(IMAGE_NAME)
+	@if [ "$(shell docker images -q $(IMAGE_NAME))" ]; then \
+		docker rmi $(IMAGE_NAME); \
+		echo "Docker image $(IMAGE_NAME) removed."; \
+	else \
+		echo "Docker image $(IMAGE_NAME) does not exist."; \
+	fi
+
+.PHONY: docker-prune  ## Clean build cache
+docker-prune:
+	@echo "Cleaning build cache..."
+	docker builder prune --force
 
 .PHONY: docker-clean  ## Clean up everything (container and image)
-docker-clean: docker-stop docker-rm docker-rmi
+docker-clean: docker-stop docker-rm docker-rmi docker-prune
 
 .PHONY: docker-rebuild  ## Rebuild and rerun Docker container
-docker-rebuild: docker-clean docker-all
+docker-rebuild: docker-stop docker-rm docker-rmi docker-all
+
+# cwltool commands
+.PHONY: cwl-corinelc
+cwl-corinelc:
+	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
+		--source clms-corinelc \
+		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
+		--date_start 2006-01-01T00:00:00Z \
+		--date_end 2018-12-31T23:59:59Z
+
+.PHONY: cwl-globallc
+cwl-globallc:
+	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
+		--source esacci-globallc \
+		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
+		--date_start 2008-01-01T00:00:00Z \
+		--date_end 2010-12-31T23:59:59Z
+
+.PHONY: cwl-water-bodies
+cwl-water-bodies:
+	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
+		--source clms-water-bodies \
+		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
+		--date_start 2024-01-01T00:00:00Z \
+		--date_end 2024-03-31T23:59:59Z

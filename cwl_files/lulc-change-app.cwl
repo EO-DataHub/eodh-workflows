@@ -15,15 +15,19 @@ $graph:
         coresMax: 1
         ramMax: 1024
     inputs:
+      source:
+        label: source
+        doc: data source to be processed
+        type: string
       aoi:
         label: aoi
         doc: area of interest as GeoJSON
         type: string
-      start_date:
+      date_start:
         label: start date
         doc: start date for data queries in ISO 8601
         type: string
-      end_date:
+      date_end:
         label: end date
         doc: end date for data queries in ISO 8601
         type: string
@@ -37,9 +41,10 @@ $graph:
       change:
         run: "#change"
         in:
+          source: source
           aoi: aoi
-          start_date: start_date
-          end_date: end_date
+          date_start: date_start
+          date_end: date_end
         out:
           - results
   # change
@@ -49,29 +54,38 @@ $graph:
       ResourceRequirement:
         coresMax: 1
         ramMax: 512
+      EnvVarRequirement:
+        envDef:
+          SH_CLIENT_ID: <<SENTINEL_HUB__CLIENT_ID>>
+          SH_SECRET: <<SENTINEL_HUB__CLIENT_SECRET>>
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
     baseCommand: ["eodh", "lulc", "change"]
     inputs:
-      aoi:
+      source:
         type: string
         inputBinding:
           position: 2
-          prefix: --aoi
-      start_date:
+          prefix: --source
+      aoi:
         type: string
         inputBinding:
           position: 3
-          prefix: --start_date
-      end_date:
+          prefix: --aoi
+      date_start:
         type: string
         inputBinding:
           position: 4
-          prefix: --end_date
+          prefix: --date_start
+      date_end:
+        type: string
+        inputBinding:
+          position: 5
+          prefix: --date_end
 
     outputs:
       results:
         type: Directory
         outputBinding:
-          glob: .
+          glob: ./data/stac-catalog/

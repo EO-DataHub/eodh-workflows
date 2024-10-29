@@ -177,3 +177,6 @@ mlruns/
 /notebooks/*
 !/notebooks/*.ipynb
 !/notebooks/.gitkeep
+/cwl_files/local/*
+!/cwl_files/local/.gitkeep
+/stac-catalog/
