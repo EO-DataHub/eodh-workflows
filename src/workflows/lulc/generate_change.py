@@ -20,7 +20,7 @@ from src.local_stac.generate import generate_stac, prepare_stac_item
 from src.raster_utils.build import build_raster_array
 from src.raster_utils.helpers import get_raster_bounds
 from src.raster_utils.save import save_cog
-from src.raster_utils.thumbnail import generate_thumbnail
+from src.raster_utils.thumbnail import generate_thumbnail, image_to_base64
 from src.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -103,19 +103,31 @@ def generate_lulc_change(source: str, aoi: str, date_start: str, date_end: str) 
 
         # Save COG with lulc change values in metadata
         raster_path = save_cog(index_raster=raster_arr, item_id=item.id, epsg=4326)
-        generate_thumbnail(raster_arr, raster_path=raster_path, classes_list=classes_orig_dict)
+        thump_fp = generate_thumbnail(raster_arr, raster_path=raster_path, classes_list=classes_orig_dict)
+        thumb_b64 = image_to_base64(thump_fp)
 
         # Create STAC definition for each item processed
         # Include lulc change in STAC item properties
         stac_items.append(
             prepare_stac_item(
                 file_path=raster_path,
+                thumbnail_path=thump_fp,
                 id_item=item.id,
                 geometry=bounds_polygon,
                 epsg=raster_arr.rio.crs.to_epsg(),
                 transform=list(raster_arr.rio.transform()),
                 datetime=item.datetime,
-                additional_prop={"lulc_classes_percentage": classes_shares, "lulc_classes_m2": classes_m2},
+                additional_prop={
+                    "lulc_classes_percentage": classes_shares,
+                    "lulc_classes_m2": classes_m2,
+                    "thumbnail_b64": thumb_b64,
+                    "workflow_metadata": {
+                        "stac_collection": source,
+                        "date_start": date_start,
+                        "date_end": date_end,
+                        "aoi": mapping(aoi_polygon),
+                    },
+                },
                 asset_extra_fields={"classification:classes": classes_orig_dict},
             )
         )

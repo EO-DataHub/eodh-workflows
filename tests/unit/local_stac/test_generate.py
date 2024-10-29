@@ -16,8 +16,13 @@ def example_polygon() -> Polygon:
 
 
 @pytest.fixture()
-def example_path() -> Path:
-    return Path.cwd() / ("fake_cog.tif")
+def example_cog_path() -> Path:
+    return Path.cwd() / "fake_cog.tif"
+
+
+@pytest.fixture()
+def example_thumbnail_fp() -> Path:
+    return Path.cwd() / "fake_cog.tif"
 
 
 @pytest.fixture()
@@ -25,7 +30,12 @@ def example_transform() -> list[float]:
     return [0.1, 0, 0, 0, 0.1, 0]
 
 
-def test_prepare_stac_item(example_polygon: Polygon, example_path: Path, example_transform: list[float]) -> None:
+def test_prepare_stac_item(
+    example_polygon: Polygon,
+    example_cog_path: Path,
+    example_thumbnail_fp: Path,
+    example_transform: list[float],
+) -> None:
     # Mocking required data
     id_item = "test-item"
     epsg = 4326
@@ -35,7 +45,8 @@ def test_prepare_stac_item(example_polygon: Polygon, example_path: Path, example
 
     # Call the function
     item = prepare_stac_item(
-        file_path=example_path,
+        file_path=example_cog_path,
+        thumbnail_path=example_thumbnail_fp,
         id_item=id_item,
         geometry=example_polygon,
         epsg=epsg,
@@ -60,9 +71,15 @@ def test_prepare_stac_item(example_polygon: Polygon, example_path: Path, example
     # Check asset
     assert "data" in item.assets
     asset = item.assets["data"]
-    assert asset.href == f"../{example_path.name}"
+    assert asset.href == f"../{example_cog_path.name}"
     assert asset.media_type == pystac.MediaType.COG
     assert asset.extra_fields == asset_extra_fields
+
+    assert "thumbnail" in item.assets
+    asset = item.assets["thumbnail"]
+    assert asset.href == f"../{example_thumbnail_fp.name}"
+    assert asset.media_type == pystac.MediaType.PNG
+    assert asset.extra_fields == {}
 
 
 @pytest.fixture()

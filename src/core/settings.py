@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     """Represents Application Settings with nested configuration sections."""
 
     environment: str = "local"
+    sh_client_id: str
+    sh_secret: str
 
     model_config = SettingsConfigDict(
         env_file=consts.directories.ROOT_DIR / ".env",
@@ -18,4 +20,5 @@ class Settings(BaseSettings):
     )
 
 
-current_settings = Settings()
+def current_settings() -> Settings:
+    return Settings()

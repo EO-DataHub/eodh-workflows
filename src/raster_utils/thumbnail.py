@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+from io import BytesIO
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -26,7 +28,7 @@ def _create_color_mapping(classes_list: list[dict[str, int | str]]) -> dict[int,
 
 def generate_thumbnail(
     data: xarray.DataArray, raster_path: Path, classes_list: list[dict[str, int | str]], thumbnail_size: int = 256
-) -> None:
+) -> Path:
     colors_dict = _create_color_mapping(classes_list=classes_list)
 
     # Assume the first band contains the land use values
@@ -67,3 +69,17 @@ def generate_thumbnail(
     # Save the thumbnail to a PNG file
     output_png_path = LOCAL_STAC_OUTPUT_DIR / f"{raster_path.stem}.png"
     thumbnail.save(output_png_path, "PNG")
+    return output_png_path
+
+
+def image_to_base64(image_path: Path) -> str:
+    # Open the image file
+    with Image.open(image_path) as img:
+        # Create a buffer to store the image in memory
+        buffered = BytesIO()
+        # Save the image as PNG to the buffer
+        img.save(buffered, format="PNG")
+        # Get the byte data from the buffer
+        img_bytes = buffered.getvalue()
+        # Encode the byte data to base64
+        return base64.b64encode(img_bytes).decode("utf-8")

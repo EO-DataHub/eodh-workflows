@@ -34,8 +34,9 @@ def prepare_stac_item(
     epsg: int,
     transform: list[float],
     datetime: str,
-    additional_prop: dict[str, dict[str, Any]],
+    additional_prop: dict[str, Any],
     asset_extra_fields: dict[str, list[dict[str, Any]]],
+    thumbnail_path: Path | None = None,
 ) -> pystac.Item:
     item = pystac.Item(
         id=id_item,
@@ -56,9 +57,9 @@ def prepare_stac_item(
             href=f"../{file_path.name}", media_type=pystac.MediaType.COG, extra_fields=asset_extra_fields
         ),
     )
-    if (LOCAL_STAC_OUTPUT_DIR / f"{file_path.stem}.png").exists():
+    if thumbnail_path:
         item.add_asset(
-            key="thumbnail", asset=pystac.Asset(href=f"../{file_path.stem}.png", media_type=pystac.MediaType.PNG)
+            key="thumbnail", asset=pystac.Asset(href=f"../{thumbnail_path.name}", media_type=pystac.MediaType.PNG)
         )
 
     return item

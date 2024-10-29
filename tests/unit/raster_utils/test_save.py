@@ -63,7 +63,7 @@ def test_save_cog_with_reprojection() -> None:
     assert result == Path.cwd() / "data" / "stac-catalog" / "item123.tif"
 
 
-def test_save_cog_with_custom_output_dir_and_epsg() -> None:
+def test_save_cog_with_custom_output_dir_and_epsg(tmp_path: Path) -> None:
     # Mocking DataArray
     mock_data_array = MagicMock(spec=xr.DataArray)
 
@@ -73,11 +73,8 @@ def test_save_cog_with_custom_output_dir_and_epsg() -> None:
     mock_rio.reproject.return_value = mock_data_array  # Mock that reprojection returns the DataArray itself
     mock_rio.write_crs.return_value = mock_data_array  # Mock that write_crs returns the DataArray itself
 
-    # Custom output directory
-    output_dir = Path("/custom/output_dir")
-
     # Call the function with a custom EPSG
-    result = save_cog(mock_data_array, "item123", output_dir=output_dir, epsg=3857)
+    result = save_cog(mock_data_array, "item123", output_dir=tmp_path, epsg=3857)
 
     # Check if write_crs was called with the correct EPSG
     mock_rio.reproject.assert_called_once_with("EPSG:3857")
@@ -86,7 +83,7 @@ def test_save_cog_with_custom_output_dir_and_epsg() -> None:
     mock_rio.write_crs.assert_called_once_with("EPSG:3857")
 
     # Check if to_raster was called with the correct arguments
-    mock_rio.to_raster.assert_called_once_with(Path("/custom/output_dir/item123.tif"), driver="COG", windowed=True)
+    mock_rio.to_raster.assert_called_once_with(tmp_path / "item123.tif", driver="COG", windowed=True)
 
     # Verify the function returned the correct path
-    assert result == Path("/custom/output_dir/item123.tif")
+    assert result == tmp_path / "item123.tif"
