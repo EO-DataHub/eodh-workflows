@@ -2,27 +2,25 @@ from __future__ import annotations
 
 import json
 import warnings
-from itertools import starmap
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import click
-import numpy as np
-import planetary_computer as pc
-import pyproj
-import rioxarray  # noqa: F401
+import rioxarray
 import stackstac
-from pyproj import CRS
-from pyproj.aoi import AreaOfInterest
-from pyproj.database import query_utm_crs_info
 from pystac_client import Client
-from rasterio import features
-from shapely.geometry import Polygon
 from tqdm import tqdm
 
 from src import consts
+from src.consts.crs import WGS84
+from src.consts.stac import EVI, NDVI, NDWI, SAVI
+from src.local_stac.generate import generate_stac, prepare_stac_item
+from src.raster_utils.helpers import get_raster_bounds
+from src.raster_utils.thumbnail import (
+    generate_thumbnail_with_continuous_colormap,
+    image_to_base64,
+)
 from src.utils.logging import get_logger
-from src.workflows.raster.generate_stac import create_stac_catalog_root, create_stac_item
 from src.workflows.raster.indices import calculate_index
 
 if TYPE_CHECKING:
@@ -33,6 +31,19 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The argument 'i
 
 _logger = get_logger(__name__)
 AREA_SQ_KM_THRESHOLD = 1000
+INDEX_TO_CMAP_LOOKUP = {
+    NDVI: "RdYlGn",
+    NDWI: "RdBu",
+    SAVI: "RdYlGr",
+    EVI: "YlGn",
+}
+INDEX_RANGES_LOOKUP = {
+    "ndvi": (-1.0, 1.0),
+    "ndwi": (-1.0, 1.0),
+    "savi": (-1.0, 1.0),
+    "evi": (-1.0, 1.0),
+}
+DATASET_TO_CATALOG_LOOKUP = {"sentinel-2-l2a": "supported-datasets/earth-search-aws"}
 
 
 @click.command(help="Calculate spectral index")
@@ -40,6 +51,7 @@ AREA_SQ_KM_THRESHOLD = 1000
 @click.option("--aoi", required=True, help="Area of Interest as GeoJSON")
 @click.option("--date_start", required=True, help="Start date for the STAC query")
 @click.option("--date_end", help="End date for the STAC query - will use current UTC date if not specified")
+@click.option("--limit", default=50, help="Max number of items to process")
 @click.option(
     "--index",
     default="NDVI",
@@ -58,8 +70,10 @@ def calculate(
     date_start: str,
     date_end: str,
     index: str,
+    limit: int = 50,
     output_dir: Path | None = None,
 ) -> None:
+    index = index.lower()
     _logger.info(
         "Running with:\n%s",
         json.dumps(
@@ -74,8 +88,8 @@ def calculate(
             indent=4,
         ),
     )
-    if output_dir is not None:
-        output_dir.mkdir(exist_ok=True, parents=True)
+    output_dir = output_dir or Path.cwd() / "stac-catalog"
+    output_dir.mkdir(exist_ok=True, parents=True)
 
     if stac_collection not in consts.stac.STAC_COLLECTIONS:
         msg = (
@@ -89,25 +103,15 @@ def calculate(
         raise ValueError(msg)
 
     aoi_polygon = json.loads(aoi)
-    bbox: tuple[int | float, int | float, int | float, int | float] = features.bounds(aoi_polygon)  # type: ignore[assignment]
-
-    wgs84_crs = pyproj.CRS(consts.crs.WGS84)
-    utm_crs = estimate_utm_crs(bbox)
-    transformer = pyproj.Transformer.from_crs(wgs84_crs, utm_crs)
-    utm_polygon = Polygon(list(starmap(transformer.transform, aoi_polygon["coordinates"][0])))
-
-    if (area_sq_km := utm_polygon.area / 1_000_000) >= AREA_SQ_KM_THRESHOLD:
-        msg = (
-            f"The AOI you selected is too large ({area_sq_km} sq km). "
-            f"Please provide an AOI below `{AREA_SQ_KM_THRESHOLD}` sq km."
-        )
-        raise ValueError(msg)
 
     # Connect to STAC API
-    catalog = Client.open(consts.stac.CATALOG_API_ENDPOINT)
+    catalog = Client.open(
+        f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/{DATASET_TO_CATALOG_LOOKUP[stac_collection]}"
+    )
 
     # Define your search with CQL2 syntax
     search = catalog.search(
+        collections=[stac_collection],
         filter_lang="cql2-json",
         filter={
             "op": "and",
@@ -116,76 +120,94 @@ def calculate(
                 {"op": "=", "args": [{"property": "collection"}, stac_collection]},
             ],
         },
-        max_items=10,
+        max_items=limit,
     )
 
-    items = [pc.sign(item) for item in search.item_collection()]
+    output_items = []
+    progress_bar = tqdm(sorted(search.items(), key=lambda x: x.datetime), desc="Processing items")
+    for item in progress_bar:
+        progress_bar.set_description(f"Working with: {item.id}")
 
-    paths = []
-    for item in tqdm(items, desc="Processing items"):
-        json_path = calculate_and_save_index(
-            item=item,
-            index=index.lower(),
-            collection=stac_collection,
-            bbox=bbox,
+        raster_path = output_dir / f"{item.id}.tif"
+        if raster_path.exists():
+            _logger.info("%s already exists. Loading....", raster_path.as_posix())
+            index_raster = rioxarray.open_rasterio(raster_path)
+        else:
+            raster_arr = build_raster_array(item=item, collection=stac_collection, index=index, epsg=WGS84)
+            index_raster = calculate_index(index=index, raster_arr=raster_arr)
+            raster_path = save_raster(index_raster=index_raster, item_id=item.id, output_dir=output_dir, epsg=WGS84)
+        v_min, v_max = INDEX_RANGES_LOOKUP[index]
+        thump_fp = generate_thumbnail_with_continuous_colormap(
+            index_raster,
+            raster_path=raster_path,
             output_dir=output_dir,
+            colormap=INDEX_TO_CMAP_LOOKUP[index],
+            max_val=v_max,
+            min_val=v_min,
         )
-
-        paths.append(json_path)
-
-    create_stac_catalog_root(paths, output_dir)
-
-
-def estimate_utm_crs(extent: tuple[float, float, float, float]) -> CRS:
-    utm_crs_list = query_utm_crs_info(
-        datum_name="WGS 84",
-        area_of_interest=AreaOfInterest(*extent),
+        thumb_b64 = image_to_base64(thump_fp)
+        output_items.append(
+            prepare_stac_item(
+                file_path=raster_path,
+                thumbnail_path=thump_fp,
+                id_item=item.id,
+                geometry=get_raster_bounds(index_raster),
+                epsg=index_raster.rio.crs.to_epsg(),
+                transform=list(index_raster.rio.transform()),
+                datetime=item.datetime,
+                additional_prop={
+                    "thumbnail_b64": thumb_b64,
+                    "workflow_metadata": {
+                        "stac_collection": stac_collection,
+                        "date_start": date_start,
+                        "date_end": date_end,
+                        "aoi": aoi_polygon,
+                    },
+                },
+                asset_extra_fields={},
+            )
+        )
+    generate_stac(
+        items=output_items,
+        output_dir=output_dir / "stac-catalog",
+        title=f"{index.upper()} calculation",
+        description=f"NDVI calculation with {stac_collection}",
     )
-    return CRS.from_epsg(utm_crs_list[0].code)
 
 
-def calculate_and_save_index(
-    item: Item,
-    bbox: tuple[int | float, int | float, int | float, int | float],
-    index: str,
-    collection: str,
-    output_dir: Path | None = None,
-    epsg: int = 4326,
-) -> Path:
-    raster_arr = build_raster_array(item=item, bbox=bbox, collection=collection, index=index, epsg=epsg)
-    index_raster = calculate_index(index=index, raster_arr=raster_arr)
-    raster_path = save_raster(index_raster=index_raster, item_id=item.id, output_dir=output_dir, epsg=epsg)
-
-    return create_stac_item(raster_path.name, output_dir)
-
-
-def save_raster(index_raster: xarray.DataArray, item_id: str, output_dir: Path | None = None, epsg: int = 4326) -> Path:
-    if output_dir is None:
-        output_dir = Path.cwd()
+def save_raster(index_raster: xarray.DataArray, item_id: str, output_dir: Path, epsg: int = WGS84) -> Path:
+    _logger.info("Saving '%s' COG to %s", item_id, output_dir.as_posix())
     index_raster = index_raster.rio.write_crs(f"EPSG:{epsg}")
     index_raster.rio.to_raster(output_dir / f"{item_id}.tif", driver="COG", windowed=True)
-
-    return Path(output_dir / f"{item_id}.tif")
+    return output_dir / f"{item_id}.tif"
 
 
 def build_raster_array(
     item: Item,
-    bbox: tuple[int | float, int | float, int | float, int | float],
     collection: str,
     index: str,
-    epsg: int = 4326,
+    epsg: int = WGS84,
+    bbox: tuple[int | float, int | float, int | float, int | float] | None = None,
 ) -> xarray.DataArray:
     assets_to_use = resolve_assets_for_index(index, collection)
+    _logger.info(
+        "Building raster array for item '%s' in collection '%s', assets %s will be used",
+        item.id,
+        collection,
+        assets_to_use,
+    )
     return (
-        stackstac.stack(
-            item,
-            assets=assets_to_use,
-            chunksize=consts.compute.CHUNK_SIZE,
-            bounds_latlon=bbox,
-            epsg=epsg,
+        (
+            stackstac.stack(
+                item,
+                assets=assets_to_use,
+                chunksize=consts.compute.CHUNK_SIZE,
+                bounds_latlon=bbox,
+                epsg=epsg,
+            ).assign_coords(band=lambda x: x.common_name.rename("band"))  # use common names
         )
-        .where(lambda x: x > 0, other=np.nan)  # sentinel-2 uses 0 as nodata
-        .assign_coords(band=lambda x: x.common_name.rename("band"))  # use common names
+        .squeeze()
+        .compute()
     )
 
 

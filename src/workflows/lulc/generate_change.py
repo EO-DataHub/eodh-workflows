@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import click
@@ -20,7 +21,7 @@ from src.local_stac.generate import generate_stac, prepare_stac_item
 from src.raster_utils.build import build_raster_array
 from src.raster_utils.helpers import get_raster_bounds
 from src.raster_utils.save import save_cog
-from src.raster_utils.thumbnail import generate_thumbnail, image_to_base64
+from src.raster_utils.thumbnail import generate_thumbnail_with_discrete_classes, image_to_base64
 from src.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -66,12 +67,20 @@ DATASOURCE_LOOKUP = {
 @click.option("--aoi", required=True, help="The area of interest as GeoJSON in EPSG:4326")
 @click.option("--date_start", required=True, help="Start date in ISO 8601 used to search input data")
 @click.option("--date_end", required=True, help="End date in ISO 8601 used to search input data")
-def generate_lulc_change(source: str, aoi: str, date_start: str, date_end: str) -> None:
+@click.option(
+    "--output_dir",
+    type=click.Path(path_type=Path),  # type: ignore[type-var]
+    help="Path to the output directory - will create new dir in CWD if not provided",
+)
+def generate_lulc_change(source: str, aoi: str, date_start: str, date_end: str, output_dir: Path | None = None) -> None:
     initial_arguments = {"source": source, "aoi": aoi, "date_start": date_start, "date_end": date_end}
     _logger.info(
         "Running with:\n%s",
         json.dumps(initial_arguments, indent=4),
     )
+    output_dir = output_dir or Path.cwd() / "stac-catalog"
+    output_dir.mkdir(exist_ok=True, parents=True)
+
     source_ds: DataSource = DATASOURCE_LOOKUP[source]
     # Transferring the AOI
     aoi_polygon = gejson_to_polygon(aoi)
@@ -103,7 +112,12 @@ def generate_lulc_change(source: str, aoi: str, date_start: str, date_end: str) 
 
         # Save COG with lulc change values in metadata
         raster_path = save_cog(index_raster=raster_arr, item_id=item.id, epsg=4326)
-        thump_fp = generate_thumbnail(raster_arr, raster_path=raster_path, classes_list=classes_orig_dict)
+        thump_fp = generate_thumbnail_with_discrete_classes(
+            raster_arr,
+            raster_path=raster_path,
+            classes_list=classes_orig_dict,
+            output_dir=output_dir,
+        )
         thumb_b64 = image_to_base64(thump_fp)
 
         # Create STAC definition for each item processed
@@ -133,7 +147,12 @@ def generate_lulc_change(source: str, aoi: str, date_start: str, date_end: str) 
         )
 
     # Generate local STAC for processed data
-    generate_stac(items=stac_items, title="eodh lulc change", description=json.dumps(initial_arguments))
+    generate_stac(
+        items=stac_items,
+        output_dir=output_dir,
+        title="eodh lulc change",
+        description=f"Land Cover Change Detection using {source} dataset",
+    )
 
 
 def _get_data(source: DataSource, aoi_polygon: Polygon, date_start: str, date_end: str) -> list[Item]:

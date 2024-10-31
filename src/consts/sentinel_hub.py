@@ -19,7 +19,6 @@ SH_EVALSCRIPT_CORINELC = """
         return [sample.CLC];
     }
 """
-
 SH_CLASSES_DICT_CORINELC = [
     {"value": 1, "description": "Continuous urban fabric", "color-hint": "e6004d"},
     {"value": 2, "description": "Discontinuous urban fabric", "color-hint": "ff0000"},
@@ -90,5 +89,4 @@ SH_EVALSCRIPT_WATERBODIES = """
 SH_CLASSES_DICT_WATERBODIES = [
     {"value": 70, "description": "Water body", "color-hint": "0000ff"},
 ]
-
 SH_NODATA_WATERBODIES = 251
