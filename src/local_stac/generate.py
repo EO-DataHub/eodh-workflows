@@ -12,6 +12,7 @@ LOCAL_STAC_OUTPUT_DIR = Path.cwd() / "data" / "stac-catalog"
 
 def generate_stac(
     items: list[pystac.Item],
+    output_dir: Path,
     title: str = "Catalog",
     description: str = "Outputs from the job processed on ADES",
 ) -> None:
@@ -23,8 +24,8 @@ def generate_stac(
     for item in items:
         catalog.add_item(item)
 
-    LOCAL_STAC_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    catalog.normalize_and_save(str(LOCAL_STAC_OUTPUT_DIR), catalog_type=pystac.CatalogType.SELF_CONTAINED)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    catalog.normalize_and_save(output_dir.as_posix(), catalog_type=pystac.CatalogType.SELF_CONTAINED)
 
 
 def prepare_stac_item(

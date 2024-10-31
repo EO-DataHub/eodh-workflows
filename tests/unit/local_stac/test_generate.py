@@ -96,7 +96,7 @@ def example_items() -> list[pystac.Item]:
 
 # Mock pystac.Catalog and pystac.Collection classes using @patch
 @patch("pystac.Catalog")
-def test_generate_stac(mock_catalog_class: MagicMock, example_items: list[pystac.Item]) -> None:
+def test_generate_stac(mock_catalog_class: MagicMock, example_items: list[pystac.Item], tmp_path: Path) -> None:
     # Mocking required data
     title = "Test Catalog Title"
     description = "Test Catalog"
@@ -112,6 +112,7 @@ def test_generate_stac(mock_catalog_class: MagicMock, example_items: list[pystac
         items=example_items,
         title=title,
         description=description,
+        output_dir=tmp_path,
     )
 
     # Check if Catalog was created with correct parameters
@@ -123,5 +124,5 @@ def test_generate_stac(mock_catalog_class: MagicMock, example_items: list[pystac
 
     # Check if normalize_and_save was called with the correct arguments
     mock_catalog_instance.normalize_and_save.assert_called_once_with(
-        str(Path.cwd() / "data" / "stac-catalog"), catalog_type=pystac.CatalogType.SELF_CONTAINED
+        tmp_path.as_posix(), catalog_type=pystac.CatalogType.SELF_CONTAINED
     )
