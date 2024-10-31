@@ -14,7 +14,7 @@ class TestConfig(ConfigBase):
     b: str
 
 
-@pytest.fixture()
+@pytest.fixture
 def parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--a", type=int)

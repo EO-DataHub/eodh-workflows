@@ -25,8 +25,8 @@ if TYPE_CHECKING:
 _logger = get_logger(__name__)
 
 
-@pytest.fixture()
-def dummy_large_raster(tmp_path: Path) -> Generator[tuple[Path, dict[str, Any]], None, None]:
+@pytest.fixture
+def dummy_large_raster(tmp_path: Path) -> Generator[tuple[Path, dict[str, Any]]]:
     """Creates a large raster file with specified dimensions and a dummy AOI."""
     raster_fp = tmp_path / "large_test_raster.tif"
     aoi = {

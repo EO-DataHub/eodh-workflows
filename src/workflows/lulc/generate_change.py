@@ -13,6 +13,7 @@ from shapely.geometry import Polygon, mapping
 from tqdm import tqdm
 
 from src import consts
+from src.consts.crs import WGS84
 from src.data_helpers.get_classes_dicts import get_classes, get_classes_orig_dict
 from src.data_helpers.sh_auth import sh_auth_token
 from src.geom_utils.calculate import calculate_geodesic_area
@@ -72,7 +73,13 @@ DATASOURCE_LOOKUP = {
     type=click.Path(path_type=Path),  # type: ignore[type-var]
     help="Path to the output directory - will create new dir in CWD if not provided",
 )
-def generate_lulc_change(source: str, aoi: str, date_start: str, date_end: str, output_dir: Path | None = None) -> None:
+def generate_lulc_change(
+    source: str,
+    aoi: str,
+    date_start: str,
+    date_end: str,
+    output_dir: Path | None = None,
+) -> None:
     initial_arguments = {"source": source, "aoi": aoi, "date_start": date_start, "date_end": date_end}
     _logger.info(
         "Running with:\n%s",
@@ -111,7 +118,7 @@ def generate_lulc_change(source: str, aoi: str, date_start: str, date_end: str, 
         raster_arr.attrs["lulc_classes_m2"] = classes_m2
 
         # Save COG with lulc change values in metadata
-        raster_path = save_cog(index_raster=raster_arr, item_id=item.id, epsg=4326)
+        raster_path = save_cog(arr=raster_arr, item_id=item.id, epsg=WGS84, output_dir=output_dir)
         thump_fp = generate_thumbnail_with_discrete_classes(
             raster_arr,
             raster_path=raster_path,
@@ -142,7 +149,9 @@ def generate_lulc_change(source: str, aoi: str, date_start: str, date_end: str, 
                         "aoi": mapping(aoi_polygon),
                     },
                 },
-                asset_extra_fields={"classification:classes": classes_orig_dict},
+                asset_extra_fields={
+                    "classification:classes": classes_orig_dict,
+                },
             )
         )
 
@@ -150,7 +159,7 @@ def generate_lulc_change(source: str, aoi: str, date_start: str, date_end: str, 
     generate_stac(
         items=stac_items,
         output_dir=output_dir,
-        title="eodh lulc change",
+        title="EOPro Land Cover Change Detection",
         description=f"Land Cover Change Detection using {source} dataset",
     )
 

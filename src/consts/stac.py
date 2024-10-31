@@ -37,3 +37,10 @@ INDEX_TO_ASSETS_LOOKUP: dict[str, dict[str, list[str]]] = {
         SAVI: ["red", "nir"],
     },
 }
+
+INDEX_TO_FULL_NAME_LOOKUP = {
+    NDVI: "Normalized Difference Vegetation Index",
+    EVI: "Enhanced Vegetation Index",
+    SAVI: "Soil Adjusted Vegetation Index",
+    NDWI: "Normalized Difference Water Index",
+}

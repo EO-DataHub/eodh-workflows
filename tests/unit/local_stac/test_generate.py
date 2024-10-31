@@ -1,31 +1,35 @@
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pystac
 import pytest
 from shapely.geometry import Polygon, mapping
 
+from src import consts
 from src.local_stac.generate import generate_stac, prepare_stac_item
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
-@pytest.fixture()
+
+@pytest.fixture
 def example_polygon() -> Polygon:
     return Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_cog_path() -> Path:
-    return Path.cwd() / "fake_cog.tif"
+    return consts.directories.TESTS_DIR / "data" / "test-raster.tif"
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_thumbnail_fp() -> Path:
-    return Path.cwd() / "fake_cog.tif"
+    return consts.directories.TESTS_DIR / "data" / "test-thumbnail.png"
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_transform() -> list[float]:
     return [0.1, 0, 0, 0, 0.1, 0]
 
@@ -79,10 +83,12 @@ def test_prepare_stac_item(
     asset = item.assets["thumbnail"]
     assert asset.href == f"../{example_thumbnail_fp.name}"
     assert asset.media_type == pystac.MediaType.PNG
-    assert asset.extra_fields == {}
+    assert asset.extra_fields == {
+        "size": example_thumbnail_fp.stat().st_size,
+    }
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_items() -> list[pystac.Item]:
     item = pystac.Item(
         id="test-item",
