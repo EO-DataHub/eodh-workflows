@@ -33,7 +33,7 @@ INDEX_TO_ASSETS_LOOKUP: dict[str, dict[str, list[str]]] = {
     SENTINEL_2_L2A_COLLECTION_NAME: {
         NDVI: ["red", "nir"],
         NDWI: ["green", "nir"],
-        EVI: ["blue", "green", "nir"],
+        EVI: ["blue", "red", "nir"],
         SAVI: ["red", "nir"],
     },
 }

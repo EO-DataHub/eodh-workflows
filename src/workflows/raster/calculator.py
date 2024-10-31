@@ -30,11 +30,10 @@ if TYPE_CHECKING:
 warnings.filterwarnings("ignore", category=UserWarning, message="The argument 'infer_datetime_format'")
 
 _logger = get_logger(__name__)
-AREA_SQ_KM_THRESHOLD = 1000
 INDEX_TO_CMAP_LOOKUP = {
     NDVI: "RdYlGn",
     NDWI: "RdBu",
-    SAVI: "RdYlGr",
+    SAVI: "RdYlGn",
     EVI: "YlGn",
 }
 INDEX_RANGES_LOOKUP = {
@@ -169,7 +168,7 @@ def calculate(
         )
     generate_stac(
         items=output_items,
-        output_dir=output_dir / "stac-catalog",
+        output_dir=output_dir,
         title=f"{index.upper()} calculation",
         description=f"NDVI calculation with {stac_collection}",
     )
