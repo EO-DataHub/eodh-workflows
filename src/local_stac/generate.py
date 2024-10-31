@@ -36,7 +36,9 @@ def prepare_stac_item(
     transform: list[float],
     datetime: str,
     additional_prop: dict[str, Any],
-    asset_extra_fields: dict[str, list[dict[str, Any]]],
+    title: str | None = None,
+    description: str | None = None,
+    asset_extra_fields: dict[str, Any] | None = None,
     thumbnail_path: Path | None = None,
 ) -> pystac.Item:
     item = pystac.Item(
@@ -52,15 +54,35 @@ def prepare_stac_item(
     projection.epsg = epsg
     projection.transform = transform
 
+    if asset_extra_fields is None:
+        asset_extra_fields = {}
+
+    if "size" not in asset_extra_fields:
+        asset_extra_fields["size"] = file_path.stat().st_size
+
     item.add_asset(
         key="data",
         asset=pystac.Asset(
-            href=f"../{file_path.name}", media_type=pystac.MediaType.COG, extra_fields=asset_extra_fields
+            title=title,
+            description=description,
+            href=f"../{file_path.name}",
+            media_type=pystac.MediaType.COG,
+            extra_fields=asset_extra_fields,
+            roles=["data"],
         ),
     )
     if thumbnail_path:
         item.add_asset(
-            key="thumbnail", asset=pystac.Asset(href=f"../{thumbnail_path.name}", media_type=pystac.MediaType.PNG)
+            key="thumbnail",
+            asset=pystac.Asset(
+                title="Thumbnail",
+                href=f"../{thumbnail_path.name}",
+                media_type=pystac.MediaType.PNG,
+                extra_fields={
+                    "size": thumbnail_path.stat().st_size,
+                },
+                roles=["thumbnail"],
+            ),
         )
 
     return item

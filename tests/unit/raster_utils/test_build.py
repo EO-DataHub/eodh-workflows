@@ -11,7 +11,7 @@ from src.raster_utils.build import build_raster_array
 from src.workflows.lulc.generate_change import DATASOURCE_LOOKUP, DataSource
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_item() -> MagicMock:
     # Create a mock pystac.Item or use a real one for testing
     item = MagicMock(spec=Item)
@@ -20,17 +20,17 @@ def example_item() -> MagicMock:
     return item
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_bbox() -> tuple[int, int, int, int]:
     return (0, 0, 1, 1)
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_source_ceda() -> DataSource:
     return DATASOURCE_LOOKUP[consts.stac.CEDA_ESACCI_LC_LOCAL_NAME]
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_source_sh() -> DataSource:
     return DATASOURCE_LOOKUP[consts.stac.SH_CLMS_CORINELC_LOCAL_NAME]
 

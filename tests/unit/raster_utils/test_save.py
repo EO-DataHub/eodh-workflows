@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import xarray as xr
 
 from src.raster_utils.save import save_cog
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
-def test_save_cog_with_defaults_no_reprojection() -> None:
+
+def test_save_cog_with_defaults_no_reprojection(tmp_path: Path) -> None:
     # Mocking DataArray
     mock_data_array = MagicMock(spec=xr.DataArray)
 
@@ -18,7 +21,7 @@ def test_save_cog_with_defaults_no_reprojection() -> None:
     mock_rio.write_crs.return_value = mock_data_array  # Mock that write_crs returns the DataArray itself
 
     # Call the function
-    result = save_cog(mock_data_array, "item123")
+    result = save_cog(mock_data_array, item_id="item123", output_dir=tmp_path)
 
     # Check if write_crs was called with the correct EPSG
     mock_rio.write_crs.assert_called_once_with("EPSG:4326")
@@ -27,15 +30,13 @@ def test_save_cog_with_defaults_no_reprojection() -> None:
     mock_rio.reproject.assert_not_called()
 
     # Check if to_raster was called with the correct arguments
-    mock_rio.to_raster.assert_called_once_with(
-        Path.cwd() / "data" / "stac-catalog" / "item123.tif", driver="COG", windowed=True
-    )
+    mock_rio.to_raster.assert_called_once_with(tmp_path / "item123.tif", driver="COG", windowed=True)
 
     # Verify the function returned the correct path
-    assert result == Path.cwd() / "data" / "stac-catalog" / "item123.tif"
+    assert result == tmp_path / "item123.tif"
 
 
-def test_save_cog_with_reprojection() -> None:
+def test_save_cog_with_reprojection(tmp_path: Path) -> None:
     # Mocking DataArray
     mock_data_array = MagicMock(spec=xr.DataArray)
 
@@ -46,7 +47,7 @@ def test_save_cog_with_reprojection() -> None:
     mock_rio.write_crs.return_value = mock_data_array  # Mock that write_crs returns the DataArray itself
 
     # Call the function
-    result = save_cog(mock_data_array, "item123")
+    result = save_cog(mock_data_array, item_id="item123", output_dir=tmp_path)
 
     # Check if reproject was called because EPSG was different
     mock_rio.reproject.assert_called_once_with("EPSG:4326")
@@ -55,12 +56,10 @@ def test_save_cog_with_reprojection() -> None:
     mock_rio.write_crs.assert_called_once_with("EPSG:4326")
 
     # Check if to_raster was called with the correct arguments
-    mock_rio.to_raster.assert_called_once_with(
-        Path.cwd() / "data" / "stac-catalog" / "item123.tif", driver="COG", windowed=True
-    )
+    mock_rio.to_raster.assert_called_once_with(tmp_path / "item123.tif", driver="COG", windowed=True)
 
     # Verify the function returned the correct path
-    assert result == Path.cwd() / "data" / "stac-catalog" / "item123.tif"
+    assert result == tmp_path / "item123.tif"
 
 
 def test_save_cog_with_custom_output_dir_and_epsg(tmp_path: Path) -> None:
