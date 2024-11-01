@@ -191,8 +191,19 @@ docker-clean: docker-stop docker-rm docker-rmi docker-prune
 .PHONY: docker-rebuild  ## Rebuild and rerun Docker container
 docker-rebuild: docker-stop docker-rm docker-rmi docker-all
 
-# cwltool commands
-.PHONY: cwl-corinelc
+# CWL workflow execution commands
+
+.PHONY: cwl-ndvi  ## Runs NDVI calculation
+cwl-ndvi:
+	@cwltool ./cwl_files/local/raster-calculate-app.cwl\#raster-calculate \
+		--stac_collection sentinel-2-l2a \
+		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+		--date_start 2024-01-01T00:00:00Z \
+		--date_end 2024-12-31T23:59:59Z \
+		--limit=2 \
+		--crop=True
+
+.PHONY: cwl-corinelc  ## Runs LULC Change with CORINE
 cwl-corinelc:
 	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
 		--source clms-corinelc \
@@ -200,7 +211,7 @@ cwl-corinelc:
 		--date_start 2006-01-01T00:00:00Z \
 		--date_end 2018-12-31T23:59:59Z
 
-.PHONY: cwl-globallc
+.PHONY: cwl-globallc  ## Runs LULC Change with ESA GLC
 cwl-globallc:
 	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
 		--source esacci-globallc \
@@ -208,7 +219,7 @@ cwl-globallc:
 		--date_start 2008-01-01T00:00:00Z \
 		--date_end 2010-12-31T23:59:59Z
 
-.PHONY: cwl-water-bodies
+.PHONY: cwl-water-bodies  ## Runs LULC Change with Water Bodies
 cwl-water-bodies:
 	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
 		--source clms-water-bodies \

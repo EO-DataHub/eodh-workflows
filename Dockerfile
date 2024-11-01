@@ -54,8 +54,8 @@ RUN mkdir -p ${HOME}
 WORKDIR ${HOME}
 
 # Install latest mambaforge in ${CONDA_DIR}
-RUN echo "Installing Mambaforge..." \
-    && URL="https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh" \
+RUN echo "Installing Miniforge..." \
+    && URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" \
     && wget --quiet ${URL} -O installer.sh \
     && /bin/bash installer.sh -u -b -p ${CONDA_DIR} \
     && rm installer.sh \
@@ -68,9 +68,6 @@ RUN echo "Installing Mambaforge..." \
     && find ${CONDA_DIR} -follow -type f -name '*.a' -delete
 
 COPY . ${HOME}
-
-# Give permissions to all for /app
-RUN chmod -R 777 ${HOME}
 
 # We want to keep our images as reproducible as possible. If a lock
 # file with exact versions of all required packages is present, we use
