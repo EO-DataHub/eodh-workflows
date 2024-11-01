@@ -16,24 +16,24 @@ $graph:
         ramMax: 1024
     inputs:
       stac_collection:
-        label: stac collection to use
-        doc: stac collection to use
+        label: STAC collection
+        doc: The STAC collection to use
         type: string
       aoi:
-        label: lorem ipsum dolor sit amet
-        doc: lorem ipsum dolor sit amet
+        label: Area
+        doc: The area of interest as GeoJSON
         type: string
       date_start:
-        label: lorem ipsum dolor sit amet
-        doc: lorem ipsum dolor sit amet
+        label: Date start
+        doc: The start date for the STAC item search
         type: string
       date_end:
-        label: lorem ipsum dolor sit amet
-        doc: lorem ipsum dolor sit amet
+        label: Date end
+        doc: The start date for the STAC item search
         type: string
       index:
-        label: lorem ipsum dolor sit amet
-        doc: lorem ipsum dolor sit amet
+        label: Index
+        doc: The spectral index to calculate
         type: string
 
     outputs:
@@ -62,7 +62,7 @@ $graph:
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
-    baseCommand: ["eodh", "raster", "calculate"]
+    baseCommand: [ "eodh", "raster", "calculate" ]
     inputs:
       stac_collection:
         type: string
