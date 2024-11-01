@@ -15,7 +15,7 @@ from src import consts
 from src.consts.crs import WGS84
 from src.consts.stac import EVI, INDEX_TO_FULL_NAME_LOOKUP, NDVI, NDWI, SAVI
 from src.geom_utils.transform import gejson_to_polygon
-from src.local_stac.generate import generate_stac, prepare_stac_item
+from src.local_stac.generate import LOCAL_STAC_OUTPUT_DIR, generate_stac, prepare_stac_item
 from src.raster_utils.helpers import get_raster_bounds
 from src.raster_utils.save import save_cog
 from src.raster_utils.thumbnail import (
@@ -98,12 +98,14 @@ def calculate(
                 "date_start": date_start,
                 "date_end": date_end,
                 "index": index,
+                "limit": limit,
+                "clip": clip,
                 "output_dir": output_dir.as_posix() if output_dir is not None else None,
             },
             indent=4,
         ),
     )
-    output_dir = output_dir or Path.cwd() / "stac-catalog"
+    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
     output_dir.mkdir(exist_ok=True, parents=True)
 
     if stac_collection not in consts.stac.STAC_COLLECTIONS:

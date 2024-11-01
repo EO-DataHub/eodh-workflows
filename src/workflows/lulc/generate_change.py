@@ -18,7 +18,7 @@ from src.data_helpers.get_classes_dicts import get_classes, get_classes_orig_dic
 from src.data_helpers.sh_auth import sh_auth_token
 from src.geom_utils.calculate import calculate_geodesic_area
 from src.geom_utils.transform import gejson_to_polygon
-from src.local_stac.generate import generate_stac, prepare_stac_item
+from src.local_stac.generate import LOCAL_STAC_OUTPUT_DIR, generate_stac, prepare_stac_item
 from src.raster_utils.build import build_raster_array
 from src.raster_utils.helpers import get_raster_bounds
 from src.raster_utils.save import save_cog
@@ -85,7 +85,7 @@ def generate_lulc_change(
         "Running with:\n%s",
         json.dumps(initial_arguments, indent=4),
     )
-    output_dir = output_dir or Path.cwd() / "stac-catalog"
+    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
     output_dir.mkdir(exist_ok=True, parents=True)
 
     source_ds: DataSource = DATASOURCE_LOOKUP[source]
