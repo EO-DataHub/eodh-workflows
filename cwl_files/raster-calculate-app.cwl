@@ -71,7 +71,7 @@ $graph:
         ramMax: 1024
     hints:
       DockerRequirement:
-        dockerPull: ghcr.io/eo-datahub/eodh-workflows@sha256:9fa7232e876bb820abe5d72ac830cb9849ae3537976d4ba0581473a8bcdf8197
+        dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
     baseCommand: [ "eodh", "raster", "calculate" ]
     inputs:
       stac_collection:
