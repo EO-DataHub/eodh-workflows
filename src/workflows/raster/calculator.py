@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import click
-import numpy as np
 import rioxarray
 import stackstac
 from pystac_client import Client
@@ -234,7 +233,6 @@ def build_raster_array(
                 chunksize=consts.compute.CHUNK_SIZE,
                 bounds_latlon=bbox if clip else None,
                 epsg=epsg,
-                dtype=np.uint16,
             ).assign_coords(band=lambda x: x.common_name.rename("band"))  # use common names
         )
         .squeeze()

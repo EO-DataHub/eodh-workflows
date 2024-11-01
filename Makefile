@@ -201,7 +201,8 @@ cwl-ndvi:
 		--date_start 2024-01-01T00:00:00Z \
 		--date_end 2024-12-31T23:59:59Z \
 		--limit=2 \
-		--crop=True
+		--index=ndvi \
+		--clip=True
 
 .PHONY: cwl-corinelc  ## Runs LULC Change with CORINE
 cwl-corinelc:
