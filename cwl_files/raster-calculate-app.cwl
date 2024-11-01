@@ -35,6 +35,14 @@ $graph:
         label: Index
         doc: The spectral index to calculate
         type: string
+      clip:
+        label: Clip
+        doc: A flag indicating whether to crop the data to the AOI footprint
+        type: string
+      limit:
+        label: Limit
+        doc: Max number of STAC items to process
+        type: string
 
     outputs:
       - id: results
@@ -50,6 +58,8 @@ $graph:
           date_start: date_start
           date_end: date_end
           index: index
+          limit: limit
+          clip: clip
         out:
           - results
   # calculator
@@ -58,10 +68,10 @@ $graph:
     requirements:
       ResourceRequirement:
         coresMax: 1
-        ramMax: 512
+        ramMax: 1024
     hints:
       DockerRequirement:
-        dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
+        dockerPull: ghcr.io/eo-datahub/eodh-workflows@sha256:9fa7232e876bb820abe5d72ac830cb9849ae3537976d4ba0581473a8bcdf8197
     baseCommand: [ "eodh", "raster", "calculate" ]
     inputs:
       stac_collection:
@@ -89,6 +99,16 @@ $graph:
         inputBinding:
           position: 5
           prefix: --index
+      clip:
+        type: string
+        inputBinding:
+          position: 6
+          prefix: --clip
+      limit:
+        type: string
+        inputBinding:
+          position: 7
+          prefix: --limit
 
     outputs:
       results:
