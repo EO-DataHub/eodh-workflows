@@ -31,7 +31,6 @@ $graph:
         label: end date
         doc: end date for data queries in ISO 8601
         type: string
-
     outputs:
       - id: results
         type: Directory
@@ -47,6 +46,7 @@ $graph:
           date_end: date_end
         out:
           - results
+
   # change
   - class: CommandLineTool
     id: change
@@ -61,7 +61,7 @@ $graph:
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
-    baseCommand: ["eodh", "lulc", "change"]
+    baseCommand: [ "eodh", "lulc", "change" ]
     inputs:
       source:
         type: string
@@ -83,7 +83,6 @@ $graph:
         inputBinding:
           position: 5
           prefix: --date_end
-
     outputs:
       results:
         type: Directory
