@@ -14,11 +14,12 @@ from tqdm import tqdm
 
 from src import consts
 from src.consts.crs import WGS84
+from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
 from src.data_helpers.get_classes_dicts import get_classes, get_classes_orig_dict
 from src.data_helpers.sh_auth import sh_auth_token
 from src.geom_utils.calculate import calculate_geodesic_area
 from src.geom_utils.transform import gejson_to_polygon
-from src.local_stac.generate import LOCAL_STAC_OUTPUT_DIR, generate_stac, prepare_stac_item
+from src.local_stac.generate import generate_stac, prepare_stac_item
 from src.raster_utils.build import build_raster_array
 from src.raster_utils.helpers import get_raster_bounds
 from src.raster_utils.save import save_cog

@@ -12,6 +12,7 @@ import rasterio.mask
 from osgeo import gdal
 from shapely.geometry.geo import box, mapping
 
+from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
 from src.utils.logging import get_logger
 
 _logger = get_logger(__name__)
@@ -85,7 +86,7 @@ def clip(
             indent=4,
         ),
     )
-    output_dir = output_dir or Path.cwd()
+    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
 
     # Clip
     aoi_polygon = json.loads(aoi)

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pystac
 from pystac.extensions.projection import ProjectionExtension
 from shapely.geometry import Polygon, mapping
 
-LOCAL_STAC_OUTPUT_DIR = Path.cwd() / "data" / "stac-catalog"
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def generate_stac(

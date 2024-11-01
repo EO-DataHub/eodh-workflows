@@ -60,7 +60,7 @@ def test_build_raster_array_ceda(
     )
 
     # Check if result is the squeezed xarray.DataArray
-    assert result == mock_dataarray.squeeze()
+    assert result == mock_dataarray.squeeze().compute()
 
 
 @patch("src.raster_utils.build.sh_get_data")

@@ -43,7 +43,6 @@ $graph:
         label: Limit
         doc: Max number of STAC items to process
         type: string
-
     outputs:
       - id: results
         type: Directory
@@ -62,6 +61,7 @@ $graph:
           clip: clip
         out:
           - results
+
   # calculator
   - class: CommandLineTool
     id: calculator
@@ -109,9 +109,8 @@ $graph:
         inputBinding:
           position: 7
           prefix: --limit
-
     outputs:
       results:
         type: Directory
         outputBinding:
-          glob: .
+          glob: ./data/stac-catalog/

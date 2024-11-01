@@ -23,17 +23,21 @@ def build_raster_array(
     epsg: int = WGS84,
 ) -> xarray.DataArray:
     if source.catalog == consts.stac.CEDA_CATALOG_API_ENDPOINT:
-        return stackstac.stack(
-            item,
-            assets=["GeoTIFF"],
-            chunksize=consts.compute.CHUNK_SIZE,
-            bounds_latlon=bbox,
-            epsg=epsg,
-            resolution=(
-                float(item.properties.get("geospatial_lon_resolution")),
-                float(item.properties.get("geospatial_lat_resolution")),
-            ),
-        ).squeeze()
+        return (
+            stackstac.stack(
+                item,
+                assets=["GeoTIFF"],
+                chunksize=consts.compute.CHUNK_SIZE,
+                bounds_latlon=bbox,
+                epsg=epsg,
+                resolution=(
+                    float(item.properties.get("geospatial_lon_resolution")),
+                    float(item.properties.get("geospatial_lat_resolution")),
+                ),
+            )
+            .squeeze()
+            .compute()
+        )
     if source.catalog == consts.stac.SH_CATALOG_API_ENDPOINT:
         token = sh_auth_token()
         return sh_get_data(token=token, source=source, bbox=bbox, stac_collection=source.collection, item_id=item.id)
