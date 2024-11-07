@@ -40,10 +40,10 @@ INDEX_TO_CMAP_LOOKUP = {
     EVI: "YlGn",
 }
 INDEX_RANGES_LOOKUP = {
-    "ndvi": (-1.0, 1.0),
-    "ndwi": (-1.0, 1.0),
-    "savi": (-1.0, 1.0),
-    "evi": (-1.0, 1.0),
+    "ndvi": (-1.0, 1.0, 20),
+    "ndwi": (-1.0, 1.0, 20),
+    "savi": (-1.0, 1.0, 20),
+    "evi": (-1.0, 1.0, 20),
 }
 DATASET_TO_CATALOG_LOOKUP = {"sentinel-2-l2a": "supported-datasets/earth-search-aws"}
 
@@ -166,7 +166,7 @@ def calculate(
             )
             index_raster = calculate_index(index=index, raster_arr=raster_arr)
             raster_path = save_cog(arr=index_raster, item_id=item.id, output_dir=output_dir, epsg=WGS84)
-        v_min, v_max = INDEX_RANGES_LOOKUP[index]
+        v_min, v_max, steps = INDEX_RANGES_LOOKUP[index]
         thump_fp = generate_thumbnail_with_continuous_colormap(
             index_raster,
             raster_path=raster_path,
@@ -200,6 +200,7 @@ def calculate(
                         "name": INDEX_TO_CMAP_LOOKUP[index],
                         "v_min": v_min,
                         "v_max": v_max,
+                        "steps": steps,
                     },
                 },
             )
