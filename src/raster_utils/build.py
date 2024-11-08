@@ -40,6 +40,6 @@ def build_raster_array(
         )
     if source.catalog == consts.stac.SH_CATALOG_API_ENDPOINT:
         token = sh_auth_token()
-        return sh_get_data(token=token, source=source, bbox=bbox, stac_collection=source.collection, item_id=item.id)
+        return sh_get_data(token=token, source=source, bbox=bbox, stac_collection=source.collection, item=item)
     error_message = "Unsupported STAC catalog"
     raise ValueError(error_message)
