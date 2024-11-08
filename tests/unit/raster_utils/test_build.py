@@ -89,7 +89,7 @@ def test_build_raster_array_sh(
         source=example_source_sh,
         bbox=example_bbox,
         stac_collection=example_source_sh.collection,
-        item_id=example_item.id,
+        item=example_item,
     )
 
     # Check if result is the xarray.DataArray returned by sh_get_data

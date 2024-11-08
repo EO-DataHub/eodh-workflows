@@ -11,6 +11,7 @@ from xarray import DataArray
 from src import consts
 
 if TYPE_CHECKING:
+    from pystac import Item
     from xarray import DataArray
 
     from src.workflows.lulc.generate_change import DataSource
@@ -27,7 +28,7 @@ def sh_get_data(
     source: DataSource,
     bbox: tuple[int | float, int | float, int | float, int | float],
     stac_collection: str,
-    item_id: str,
+    item: Item,
     timeout: int = 20,
 ) -> DataArray:
     process_api_url = consts.sentinel_hub.SH_PROCESS_API
@@ -35,7 +36,17 @@ def sh_get_data(
     payload = {
         "input": {
             "bounds": {"bbox": bbox, "properties": {"crs": "http://www.opengis.net/def/crs/EPSG/0/4326"}},
-            "data": [{"type": stac_collection, "dataFilter": {"itemId": item_id}}],
+            "data": [
+                {
+                    "type": stac_collection,
+                    "dataFilter": {
+                        "timeRange": {
+                            "from": item.datetime.isoformat(),
+                            "to": item.datetime.isoformat(),
+                        }
+                    },
+                }
+            ],
         },
         "evalscript": EVALSCRIPT_MAPPING[source.name],
         "output": {
