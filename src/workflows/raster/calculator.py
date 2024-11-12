@@ -34,16 +34,38 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The argument 'i
 
 _logger = get_logger(__name__)
 INDEX_TO_CMAP_LOOKUP = {
-    NDVI: "RdYlGn",
-    NDWI: "RdBu",
-    SAVI: "RdYlGn",
-    EVI: "YlGn",
+    NDVI: {
+        "name": "velocity-green",
+        "reversed": True,
+        "min": -1.0,
+        "max": 1.0,
+        "steps": 20,
+    },
+    NDWI: {
+        "name": "RdBu",
+        "reversed": False,
+        "min": -1.0,
+        "max": 1.0,
+        "steps": 20,
+    },
+    SAVI: {
+        "name": "velocity-green",
+        "reversed": True,
+        "min": -1.0,
+        "max": 1.0,
+        "steps": 20,
+    },
+    EVI: {
+        "name": "velocity-green",
+        "reversed": True,
+        "min": -1.0,
+        "max": 1.0,
+        "steps": 20,
+    },
 }
-INDEX_RANGES_LOOKUP = {
-    "ndvi": (-1.0, 1.0, 20),
-    "ndwi": (-1.0, 1.0, 20),
-    "savi": (-1.0, 1.0, 20),
-    "evi": (-1.0, 1.0, 20),
+JS_CM_TO_MPL_CL_LOOKUP = {
+    "RdBu": "RdBu",
+    "velocity-green": "YlGn",
 }
 DATASET_TO_CATALOG_LOOKUP = {"sentinel-2-l2a": "supported-datasets/earth-search-aws"}
 
@@ -166,14 +188,14 @@ def calculate(
             )
             index_raster = calculate_index(index=index, raster_arr=raster_arr)
             raster_path = save_cog(arr=index_raster, item_id=item.id, output_dir=output_dir, epsg=WGS84)
-        v_min, v_max, steps = INDEX_RANGES_LOOKUP[index]
+        cmap_info = INDEX_TO_CMAP_LOOKUP[index]
         thump_fp = generate_thumbnail_with_continuous_colormap(
             index_raster,
             raster_path=raster_path,
             output_dir=output_dir,
-            colormap=INDEX_TO_CMAP_LOOKUP[index],
-            max_val=v_max,
-            min_val=v_min,
+            colormap=JS_CM_TO_MPL_CL_LOOKUP[cmap_info["name"]],  # type: ignore[index]
+            max_val=cmap_info["max"],  # type: ignore[arg-type]
+            min_val=cmap_info["min"],  # type: ignore[arg-type]
         )
         thumb_b64 = image_to_base64(thump_fp)
         output_items.append(
@@ -196,12 +218,7 @@ def calculate(
                     },
                 },
                 asset_extra_fields={
-                    "colormap": {
-                        "name": INDEX_TO_CMAP_LOOKUP[index],
-                        "v_min": v_min,
-                        "v_max": v_max,
-                        "steps": steps,
-                    },
+                    "colormap": cmap_info,
                 },
             )
         )
