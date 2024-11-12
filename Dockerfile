@@ -27,9 +27,6 @@ ENV ENV_PREFIX=${CONDA_DIR}/envs/${CONDA_ENV} \
 # as that comes first here.
 ENV PATH=${ENV_PREFIX}/bin:${CONDA_DIR}/bin:${PATH}
 
-# Give permissions to all for /srv
-RUN chmod -R 777 /srv
-
 # Run conda activate each time a bash shell starts, so users don't have to manually type conda activate
 # Note this is only read by shell, but not by the jupyter notebook - that relies
 # on us starting the correct `python` process, which we do by adding the notebook conda environment's
@@ -67,7 +64,7 @@ RUN echo "Installing Miniforge..." \
     # quite a bit unfortunately - see https://github.com/2i2c-org/infrastructure/issues/2047
     && find ${CONDA_DIR} -follow -type f -name '*.a' -delete
 
-COPY . ${HOME}
+COPY conda-lock.yml ${HOME}
 
 # We want to keep our images as reproducible as possible. If a lock
 # file with exact versions of all required packages is present, we use
@@ -85,3 +82,5 @@ RUN conda-lock install --name ${CONDA_ENV} conda-lock.yml && \
     find ${ENV_PREFIX}/lib/python*/site-packages/bokeh/server/static -follow -type f -name '*.js' ! -name '*.min.js' -delete \
     ; fi && \
     pip install -e .
+
+COPY . ${HOME}
