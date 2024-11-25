@@ -2,100 +2,86 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
-import numpy as np
+import pystac
 import rasterio
 import rasterio.features
 import rasterio.mask
 from osgeo import gdal
 from shapely.geometry.geo import box, mapping
+from tqdm import tqdm
 
-from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.consts.directories import LOCAL_STAC_OUTPUT_DIR_DICT
+from src.geom_utils.transform import gejson_to_polygon
 from src.utils.logging import get_logger
+
+if TYPE_CHECKING:
+    from shapely.geometry import Polygon
 
 _logger = get_logger(__name__)
 gdal.UseExceptions()
 
 
-def clip_raster(fp: Path, aoi: dict[str, Any], output_dir: Path) -> Path:
+def clip_raster(file_path: Path, aoi: Polygon, output_dir: Path) -> Path:
     output_dir.mkdir(exist_ok=True, parents=True)
 
-    with rasterio.open(fp) as src:
-        out_image, out_transform = rasterio.mask.mask(src, [aoi], nodata=np.nan, crop=True)
-        out_meta = src.meta
+    with rasterio.open(file_path) as src:
+        out_image, out_transform = rasterio.mask.mask(src, [aoi], all_touched=True, crop=True)
+        out_meta = src.meta.copy()
 
-    out_meta.update({
-        "driver": "GTiff",
-        "height": out_image.shape[1],
-        "width": out_image.shape[2],
-        "transform": out_transform,
-        "nodata": np.nan,
-    })
+        out_meta.update({
+            "driver": "COG",
+            "height": out_image.shape[1],
+            "width": out_image.shape[2],
+            "transform": out_transform,
+        })
 
-    with rasterio.open(output_dir / fp.name, "w", **out_meta) as dest:
+    with rasterio.open(output_dir / file_path.name, "w", **out_meta) as dest:
         dest.write(out_image)
 
-    return output_dir / fp.name
+    return output_dir / file_path.name
 
 
-def update_item_with_new_footprint(stac_item_spec: dict[str, Any], aoi_polygon: dict[str, Any]) -> dict[str, Any]:
-    bbox = rasterio.features.bounds(aoi_polygon)
-    footprint_poly = box(*bbox)
-    footprint = mapping(footprint_poly)
-    stac_item_spec["bbox"] = bbox
-    stac_item_spec["geometry"] = footprint
-    return stac_item_spec
-
-
-@click.command(help="Clip (crop) raster to specified AOI.")
+@click.command(help="Clip (crop) rasters in STAC to specified AOI.")
 @click.option(
-    "--stac_item_spec",
+    "--input_stac",
     required=True,
     type=click.Path(path_type=Path),  # type: ignore[type-var]
-    help="The STAC item metadata associated with raster file",
+    help="Path to the local STAC folder",
 )
-@click.option(
-    "--raster",
-    required=True,
-    type=click.Path(path_type=Path),  # type: ignore[type-var]
-    help="GeoTiff raster file to clip",
-)
-@click.option("--aoi", required=True, help="Area of Interest as GeoJSON to be used for clipping")
-@click.option(
-    "--output_dir",
-    type=click.Path(path_type=Path),  # type: ignore[type-var]
-    help="Path to the output directory - will create new dir in CWD if not provided",
-)
-def clip(
-    stac_item_spec: Path,
-    raster: Path,
-    aoi: str,
-    output_dir: Path | None = None,
-) -> None:
+@click.option("--aoi", required=True, help="Area of Interest as GeoJSON to be used for clipping; in EPSG:4326")
+def clip(input_stac: Path, aoi: str) -> None:
     _logger.info(
         "Running with:\n%s",
         json.dumps(
             {
-                "stac_item_spec": stac_item_spec.as_posix(),
-                "raster": raster.as_posix(),
+                "input_stac": input_stac.as_posix(),
                 "aoi": aoi,
-                "output_dir": output_dir.as_posix() if output_dir is not None else None,
             },
             indent=4,
         ),
     )
-    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
+    output_dir = LOCAL_STAC_OUTPUT_DIR_DICT["clip"]
+    aoi_polygon = gejson_to_polygon(aoi)
 
-    # Clip
-    aoi_polygon = json.loads(aoi)
-    clip_raster(fp=raster, output_dir=output_dir, aoi=aoi_polygon)
+    local_stac = pystac.Catalog.from_file((input_stac / "catalog.json").as_posix())
+    local_stac.make_all_asset_hrefs_absolute()
 
-    # Update Item spec with new footprint and bbox
-    item = update_item_with_new_footprint(
-        stac_item_spec=json.loads(stac_item_spec.read_text(encoding="utf-8")),
-        aoi_polygon=aoi_polygon,
-    )
+    stac_items = local_stac.get_items()
+    progress_bar = tqdm(stac_items, desc="Processing items")
+    for item in progress_bar:
+        progress_bar.set_description(f"Working with: {item.id}")
+        clipped_raster = clip_raster(file_path=Path(item.assets["data"].href), aoi=aoi_polygon, output_dir=output_dir)
+        item.assets["data"].href = clipped_raster.as_posix()
+        item.geometry = mapping(aoi_polygon)
+        item.bbox = list(aoi_polygon.bounds)
 
-    (output_dir / stac_item_spec.name).write_text(json.dumps(item, indent=4), encoding="utf-8")
+        if "size" in item.assets["data"].extra_fields:
+            item.assets["data"].extra_fields["size"] = clipped_raster.stat().st_size
+
+    local_stac.title = "EOPro Clipped Data"
+    local_stac.description = "EOPro Clipped Data"
+    local_stac.make_all_asset_hrefs_relative()
+    local_stac.normalize_and_save(output_dir.as_posix(), catalog_type=pystac.CatalogType.SELF_CONTAINED)

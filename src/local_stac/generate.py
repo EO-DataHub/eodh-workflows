@@ -25,6 +25,8 @@ def generate_stac(
         catalog.add_item(item)
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    catalog.normalize_hrefs(output_dir.as_posix())
+    catalog.make_all_asset_hrefs_relative()
     catalog.normalize_and_save(output_dir.as_posix(), catalog_type=pystac.CatalogType.SELF_CONTAINED)
 
 
@@ -65,7 +67,7 @@ def prepare_stac_item(
         asset=pystac.Asset(
             title=title,
             description=description,
-            href=f"../{file_path.name}",
+            href=file_path.as_posix(),
             media_type=pystac.MediaType.COG,
             extra_fields=asset_extra_fields,
             roles=["data"],
@@ -76,7 +78,7 @@ def prepare_stac_item(
             key="thumbnail",
             asset=pystac.Asset(
                 title="Thumbnail",
-                href=f"../{thumbnail_path.name}",
+                href=thumbnail_path.as_posix(),
                 media_type=pystac.MediaType.PNG,
                 extra_fields={
                     "size": thumbnail_path.stat().st_size,

@@ -7,7 +7,7 @@ from src import consts
 if TYPE_CHECKING:
     from pystac import Item
 
-    from src.workflows.lulc.generate_change import DataSource
+    from src.workflows.raster.download import DataSource
 
 
 def get_classes_orig_dict(source: DataSource, item: Item) -> list[dict[str, int | str]]:

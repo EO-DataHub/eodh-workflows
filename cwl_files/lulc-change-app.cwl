@@ -7,7 +7,7 @@ schemas:
 $graph:
   # Workflow entrypoint
   - class: Workflow
-    id: lulc-change
+    id: lulc-change-wf
     label: LULC change
     doc: LULC change
     requirements:
@@ -31,14 +31,15 @@ $graph:
         label: end date
         doc: end date for data queries in ISO 8601
         type: string
+
     outputs:
       - id: results
         type: Directory
         outputSource:
-          - change/results
+          - generate-thumbnails/results
     steps:
-      change:
-        run: "#change"
+      download:
+        run: "#download"
         in:
           source: source
           aoi: aoi
@@ -46,10 +47,29 @@ $graph:
           date_end: date_end
         out:
           - results
+      clip:
+        run: "#clip"
+        in:
+          input_stac: download/results
+          aoi: aoi
+        out:
+          - results
+      lulc-change:
+        run: "#lulc-change"
+        in:
+          input_stac: clip/results
+        out:
+          - results
+      generate-thumbnails:
+        run: "#generate-thumbnails"
+        in:
+          input_stac: lulc-change/results
+        out:
+          - results
 
-  # change
+  # download
   - class: CommandLineTool
-    id: change
+    id: download
     requirements:
       ResourceRequirement:
         coresMax: 1
@@ -61,7 +81,7 @@ $graph:
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
-    baseCommand: [ "eodh", "lulc", "change" ]
+    baseCommand: ["eodh", "raster", "download"]
     inputs:
       source:
         type: string
@@ -83,8 +103,86 @@ $graph:
         inputBinding:
           position: 5
           prefix: --date_end
+
     outputs:
       results:
         type: Directory
         outputBinding:
-          glob: ./data/stac-catalog/
+          glob: ./data/downloaded/
+
+  # clip
+  - class: CommandLineTool
+    id: clip
+    requirements:
+      ResourceRequirement:
+        coresMax: 1
+        ramMax: 512
+    hints:
+      DockerRequirement:
+        dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
+    baseCommand: ["eodh", "raster", "clip"]
+    inputs:
+      input_stac:
+        type: Directory
+        inputBinding:
+          position: 2
+          prefix: --input_stac
+      aoi:
+        type: string
+        inputBinding:
+          position: 3
+          prefix: --aoi
+
+    outputs:
+      results:
+        type: Directory
+        outputBinding:
+          glob: ./data/clipped/
+
+  # lulc-change
+  - class: CommandLineTool
+    id: lulc-change
+    requirements:
+      ResourceRequirement:
+        coresMax: 1
+        ramMax: 512
+    hints:
+      DockerRequirement:
+        dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
+    baseCommand: ["eodh", "lulc", "change"]
+    inputs:
+      input_stac:
+        type: Directory
+        inputBinding:
+          position: 2
+          prefix: --input_stac
+
+    outputs:
+      results:
+        type: Directory
+        outputBinding:
+          glob: ./data/lulc_change/
+
+  # generate-thumbnails
+  - class: CommandLineTool
+    id: generate-thumbnails
+    requirements:
+      ResourceRequirement:
+        coresMax: 1
+        ramMax: 512
+    hints:
+      DockerRequirement:
+        dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
+    baseCommand: ["eodh", "raster", "thumbnails"]
+    inputs:
+      input_stac:
+        type: Directory
+        inputBinding:
+          position: 2
+          prefix: --input_stac
+
+    outputs:
+      results:
+        type: Directory
+        outputBinding:
+          glob: ./data/thumbnails/

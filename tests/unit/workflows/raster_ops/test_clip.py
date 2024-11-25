@@ -132,7 +132,7 @@ def test_clip_raster_and_vectorize(dummy_large_raster: tuple[Path, dict[str, Any
     expected_overlap_percent = 99
 
     # Act
-    output_fp = clip_raster(fp=raster_fp, aoi=aoi, output_dir=tmp_path)
+    output_fp = clip_raster(file_path=raster_fp, aoi=aoi, output_dir=tmp_path)
 
     # Assert
     assert output_fp.exists(), "Output file should exist"
