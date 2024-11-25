@@ -37,6 +37,7 @@ readme = { file = ["README.md"] }
 
 [project.scripts]
 eodh = "src.workflows.entrypoint:cli"
+eopro = "src.workflows.eopro_entrypoint:cli"
 
 [tool.ruff]
 show-fixes = true
@@ -194,6 +195,9 @@ plugins = "numpy.typing.mypy_plugin"
 [[tool.mypy.overrides]]
 module = [
     "affine.*",
+    "dask.*",
+    "distributed.*",
+    "geopandas.*",
     "matplotlib.*",
     "mkdocs_gen_files.*",
     "pandas.*",
