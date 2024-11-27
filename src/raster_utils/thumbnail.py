@@ -34,7 +34,7 @@ def generate_thumbnail_with_discrete_classes(
     raster_path: Path,
     output_dir: Path,
     classes_list: list[dict[str, int | str]],
-    thumbnail_size: int = 256,
+    thumbnail_size: int = 64,
     epsg: int = PSEUDO_MERCATOR,
 ) -> Path:
     colors_dict = _create_color_mapping(classes_list=classes_list)
@@ -85,7 +85,7 @@ def generate_thumbnail_with_continuous_colormap(
     raster_path: Path,
     colormap: str,
     output_dir: Path,
-    thumbnail_size: int = 256,
+    thumbnail_size: int = 64,
     min_val: float = -1.0,
     max_val: float = 1.0,
     epsg: int = PSEUDO_MERCATOR,
