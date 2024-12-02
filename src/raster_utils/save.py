@@ -19,7 +19,7 @@ def save_cog(arr: xarray.DataArray, item_id: str, output_dir: Path, epsg: int = 
 
     if arr.rio.crs is None:
         _logger.warning("CRS on `rio` accessor for item '%s' was not set. Will assume %s", item_id, epsg)
-        arr = arr.rio.write_crs(epsg=epsg)
+        arr = arr.rio.write_crs(f"EPSG:{epsg}")
 
     if arr.rio.crs.to_epsg() != epsg:
         arr = arr.rio.reproject(f"EPSG:{epsg}")

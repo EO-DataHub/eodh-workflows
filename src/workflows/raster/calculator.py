@@ -3,18 +3,16 @@ from __future__ import annotations
 import json
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
 import click
 import rioxarray
-import stackstac
 from pystac_client import Client
 from tqdm import tqdm
 
 from src import consts
 from src.consts.crs import WGS84
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
-from src.consts.stac import EVI, INDEX_TO_FULL_NAME_LOOKUP, NDVI, NDWI, SAVI
 from src.geom_utils.transform import gejson_to_polygon
 from src.local_stac.generate import generate_stac, prepare_stac_item
 from src.raster_utils.helpers import get_raster_bounds
@@ -24,48 +22,15 @@ from src.raster_utils.thumbnail import (
     image_to_base64,
 )
 from src.utils.logging import get_logger
-from src.workflows.raster.indices import calculate_index
-
-if TYPE_CHECKING:
-    import xarray
-    from pystac import Item
+from src.workflows.raster.indices import SPECTRAL_INDICES
 
 warnings.filterwarnings("ignore", category=UserWarning, message="The argument 'infer_datetime_format'")
 
 _logger = get_logger(__name__)
-INDEX_TO_CMAP_LOOKUP = {
-    NDVI: {
-        "name": "velocity-green",
-        "reversed": True,
-        "min": -1.0,
-        "max": 1.0,
-        "steps": 20,
-    },
-    NDWI: {
-        "name": "RdBu",
-        "reversed": False,
-        "min": -1.0,
-        "max": 1.0,
-        "steps": 20,
-    },
-    SAVI: {
-        "name": "velocity-green",
-        "reversed": True,
-        "min": -1.0,
-        "max": 1.0,
-        "steps": 20,
-    },
-    EVI: {
-        "name": "velocity-green",
-        "reversed": True,
-        "min": -1.0,
-        "max": 1.0,
-        "steps": 20,
-    },
-}
 JS_CM_TO_MPL_CL_LOOKUP = {
     "RdBu": "RdBu",
     "velocity-green": "YlGn",
+    "jet": "jet",
 }
 DATASET_TO_CATALOG_LOOKUP = {"sentinel-2-l2a": "supported-datasets/earth-search-aws"}
 
@@ -92,7 +57,7 @@ DATASET_TO_CATALOG_LOOKUP = {"sentinel-2-l2a": "supported-datasets/earth-search-
 @click.option(
     "--index",
     default="NDVI",
-    type=click.Choice(["NDVI", "NDWI", "EVI", "SAVI"], case_sensitive=False),
+    type=click.Choice(SPECTRAL_INDICES, case_sensitive=False),
     show_default=True,
     help="The spectral index to calculate",
 )
@@ -138,7 +103,8 @@ def calculate(
         )
         raise ValueError(msg)
 
-    if index.lower() not in consts.stac.INDEX_TO_ASSETS_LOOKUP[stac_collection]:
+    index_calculator = SPECTRAL_INDICES[index]
+    if stac_collection not in index_calculator.collection_assets_to_use:
         msg = f"Calculating `{index}` index is not possible for STAC collection `{stac_collection}`"
         raise ValueError(msg)
 
@@ -178,30 +144,30 @@ def calculate(
             _logger.info("%s already exists. Loading....", raster_path.as_posix())
             index_raster = rioxarray.open_rasterio(raster_path)
         else:
-            raster_arr = build_raster_array(
+            index_raster = index_calculator.compute(
                 item=item,
-                collection=stac_collection,
-                index=index,
-                bbox=gejson_to_polygon(aoi).bounds,
-                epsg=WGS84,
-                clip=clip == "True",
+                bbox=gejson_to_polygon(aoi).bounds if clip == "True" else None,
+                collection_name=stac_collection,
             )
-            index_raster = calculate_index(index=index, raster_arr=raster_arr)
             raster_path = save_cog(arr=index_raster, item_id=item.id, output_dir=output_dir, epsg=WGS84)
-        cmap_info = INDEX_TO_CMAP_LOOKUP[index]
+
+        vmin, vmax, intervals = index_calculator.typical_range
+        mpl_cmap, _ = index_calculator.mpl_colormap
+        js_cmap, cmap_reversed = index_calculator.js_colormap
         thump_fp = generate_thumbnail_with_continuous_colormap(
             index_raster,
             raster_path=raster_path,
             output_dir=output_dir,
-            colormap=JS_CM_TO_MPL_CL_LOOKUP[cmap_info["name"]],  # type: ignore[index]
-            max_val=cmap_info["max"],  # type: ignore[arg-type]
-            min_val=cmap_info["min"],  # type: ignore[arg-type]
+            colormap=mpl_cmap,
+            max_val=vmax,
+            min_val=vmin,
         )
         thumb_b64 = image_to_base64(thump_fp)
+
         output_items.append(
             prepare_stac_item(
                 file_path=raster_path,
-                title=INDEX_TO_FULL_NAME_LOOKUP[index],
+                title=index_calculator.full_name,
                 thumbnail_path=thump_fp,
                 id_item=item.id,
                 geometry=get_raster_bounds(index_raster),
@@ -218,7 +184,14 @@ def calculate(
                     },
                 },
                 asset_extra_fields={
-                    "colormap": cmap_info,
+                    "colormap": {
+                        "name": js_cmap,
+                        "reversed": cmap_reversed,
+                        "min": vmin,
+                        "max": vmax,
+                        "steps": intervals,
+                        "units": index_calculator.units,
+                    },
                 },
             )
         )
@@ -228,38 +201,3 @@ def calculate(
         title=f"EOPro {index.upper()} calculation",
         description=f"{index.upper()} calculation with {stac_collection}",
     )
-
-
-def build_raster_array(
-    item: Item,
-    collection: str,
-    index: str,
-    bbox: tuple[int | float, int | float, int | float, int | float],
-    epsg: int = WGS84,
-    *,
-    clip: bool = False,
-) -> xarray.DataArray:
-    assets_to_use = resolve_assets_for_index(index, collection)
-    _logger.info(
-        "Building raster array for item '%s' in collection '%s', assets %s will be used",
-        item.id,
-        collection,
-        assets_to_use,
-    )
-    return (
-        (
-            stackstac.stack(
-                item,
-                assets=assets_to_use,
-                chunksize=consts.compute.CHUNK_SIZE,
-                bounds_latlon=bbox if clip else None,
-                epsg=epsg,
-            ).assign_coords(band=lambda x: x.common_name.rename("band"))  # use common names
-        )
-        .squeeze()
-        .compute()
-    )
-
-
-def resolve_assets_for_index(index: str, collection: str) -> list[str]:
-    return consts.stac.INDEX_TO_ASSETS_LOOKUP[collection][index]

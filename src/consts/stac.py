@@ -23,24 +23,3 @@ SENTINEL_2_L2A_COLLECTION_NAME = "sentinel-2-l2a"
 STAC_COLLECTIONS = {
     SENTINEL_2_L2A_COLLECTION_NAME,
 }
-
-NDVI = "ndvi"
-NDWI = "ndwi"
-EVI = "evi"
-SAVI = "savi"
-
-INDEX_TO_ASSETS_LOOKUP: dict[str, dict[str, list[str]]] = {
-    SENTINEL_2_L2A_COLLECTION_NAME: {
-        NDVI: ["red", "nir"],
-        NDWI: ["green", "nir"],
-        EVI: ["blue", "red", "nir"],
-        SAVI: ["red", "nir"],
-    },
-}
-
-INDEX_TO_FULL_NAME_LOOKUP = {
-    NDVI: "Normalized Difference Vegetation Index",
-    EVI: "Enhanced Vegetation Index",
-    SAVI: "Soil Adjusted Vegetation Index",
-    NDWI: "Normalized Difference Water Index",
-}
