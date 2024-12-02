@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 import numpy as np
+import rioxarray  # noqa: F401
 from matplotlib import cm
 from PIL import Image
 from rasterio.enums import Resampling
@@ -91,7 +92,7 @@ def generate_thumbnail_with_continuous_colormap(
     epsg: int = PSEUDO_MERCATOR,
 ) -> Path:
     _logger.info("Generating thumbnail with continuous colormap")
-    # Assume the first band contains the land use values
+    # Assume the first band contains the data
     band_data = data[0] if data.ndim != EXPECTED_NDIM else data
 
     if band_data.rio.crs.to_epsg() != epsg:
