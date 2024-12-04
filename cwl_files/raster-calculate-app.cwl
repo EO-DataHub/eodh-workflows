@@ -12,8 +12,8 @@ $graph:
     doc: Test raster calculator for Spyrosoft workflows
     requirements:
       ResourceRequirement:
-        coresMax: 1
-        ramMax: 1024
+        coresMax: 2
+        ramMax: 4096
     inputs:
       stac_collection:
         label: STAC collection
@@ -67,8 +67,8 @@ $graph:
     id: calculator
     requirements:
       ResourceRequirement:
-        coresMax: 1
-        ramMax: 1024
+        coresMax: 2
+        ramMax: 4096
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
