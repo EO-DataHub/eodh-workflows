@@ -28,3 +28,15 @@ def save_cog(arr: xarray.DataArray, asset_id: str, output_dir: Path, epsg: int =
     arr.rio.to_raster(output_dir / f"{asset_id}.tif", driver="COG", windowed=True)
 
     return output_dir / f"{asset_id}.tif"
+
+
+def save_cog_v2(arr: xarray.DataArray, output_file_path: Path) -> Path:
+    _logger.info("Saving '%s' COG to %s", output_file_path.name, output_file_path.as_posix())
+    output_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if arr.rio.crs is None:
+        _logger.warning("CRS on `rio` accessor for item '%s' was not set", output_file_path.as_posix())
+
+    arr.rio.to_raster(output_file_path.as_posix(), driver="COG", windowed=True)
+
+    return output_file_path

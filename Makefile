@@ -193,6 +193,62 @@ docker-clean: docker-stop docker-rm docker-rmi docker-prune
 .PHONY: docker-rebuild  ## Rebuild and rerun Docker container
 docker-rebuild: docker-stop docker-rm docker-rmi docker-all
 
+# Command line execution commands
+
+.PHONY: query-s2 ## Query Sentinel-2
+query-s2:
+	eopro ds query --stac_collection sentinel-2-l2a \
+	--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+	--date_start 2024-01-01T00:00:00Z \
+	--date_end 2024-12-31T23:59:59Z \
+	--output_dir "./data/stac_downloaded_s2"
+
+.PHONY: clip-s2 ## Works after query-s2
+clip-s2:
+	eopro stac clip --input_stac "./data/stac_downloaded_s2" \
+	--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.65,4.35],[71.8,4.35],[71.8,4.5],[71.65,4.5],[71.65,4.35]]]}" \
+	--output_dir "./data/clipped_s2"
+
+.PHONY: query-globallc ## Query ESA Global LC
+query-globallc:
+	eopro ds query --stac_collection esa-lccci-glcm \
+	--area "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
+	--date_start 2008-01-01T00:00:00Z \
+	--date_end 2010-12-31T23:59:59Z \
+	--output_dir "./data/stac_downloaded_globallc"
+
+.PHONY: clip-globallc ## Works after query-globallc
+clip-globallc:
+	eopro stac clip --input_stac "./data/stac_downloaded_globallc" \
+	--area "{\"type\": \"Polygon\",\"coordinates\": [[[15.0, 50.9],[15.03, 50.9],[15.03, 50.95],[15.0, 50.95],[15.0, 50.9]]]}" \
+	--output_dir "./data/clipped_globallc"
+
+.PHONY: lulc-change-globallc ## Works after query-globallc or clip-globallc
+lulc-change-globallc:
+	eopro lulc change --input_stac "./data/clipped_globallc" \
+	--output_dir "./data/summarized_globallc"
+
+.PHONY: query-corine ## Query CORINE Land Cover
+query-corine:
+	eopro ds query --stac_collection clms-corine-lc \
+	--area "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
+	--date_start 2006-01-01T00:00:00Z \
+	--date_end 2018-12-31T23:59:59Z \
+	--output_dir "./data/stac_downloaded_corine"
+
+.PHONY: query-wb ## Query Water Bodies
+query-wb:
+	eopro ds query --stac_collection clms-water-bodies \
+	--area "{\"type\": \"Polygon\",\"coordinates\": [[[14.82449, 50.99583],[14.82449, 51.15208],[15.09065, 51.15208],[15.09065, 50.99583],[14.82449, 50.99583]]]}" \
+	--date_start 2024-01-01T00:00:00Z \
+	--date_end 2024-03-31T23:59:59Z \
+	--output_dir "./data/stac_downloaded_waterbodies"
+
+.PHONY: lulc-change-wb ## Works after query-wb
+lulc-change-wb:
+	eopro lulc change --input_stac "./data/stac_downloaded_waterbodies" \
+	--output_dir "./data/summarized_wb"
+
 # CWL workflow execution commands
 
 .PHONY: cwl-ndvi  ## Runs Raster Calculator

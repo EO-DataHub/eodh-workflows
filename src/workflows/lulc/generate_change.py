@@ -168,8 +168,8 @@ def generate_lulc_change(
     generate_stac(
         items=stac_items,
         output_dir=output_dir,
-        title="EOPro Land Cover Change Detection",
-        description=f"Land Cover Change Detection using {source} dataset",
+        title="EOPro Discrete Data Summary",
+        description=f"Discrete Data Summary using {source} dataset",
     )
 
 
