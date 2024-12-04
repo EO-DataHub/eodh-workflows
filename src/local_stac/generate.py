@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 import pystac
@@ -89,3 +91,41 @@ def prepare_stac_item(
             item.add_asset(key=asset_key, asset=asset)
 
     return item
+
+
+def prepare_local_stac(
+    items_paths: list[Path],
+    title: str,
+    description: str,
+    spatial_extent: tuple[float, float, float, float],
+    temp_extent: tuple[str, str],
+) -> pystac.Catalog:
+    temp_extent_stac = [
+        [
+            datetime.fromisoformat(temp_extent[0].replace("Z", "+00:00")),
+            datetime.fromisoformat(temp_extent[1].replace("Z", "+00:00")),
+        ]
+    ]
+
+    catalog = pystac.Catalog(id="catalog", title=f"{title} Catalog", description=description)
+    collection = pystac.Collection(
+        id="collection",
+        description=description,
+        extent=pystac.Extent(
+            spatial=pystac.SpatialExtent([spatial_extent]),
+            temporal=pystac.TemporalExtent(intervals=temp_extent_stac),
+        ),
+        title=f"{title} Collection",
+    )
+
+    # Add the collection to the catalog
+    catalog.add_child(collection)
+
+    # Add items to collection
+    for item_path in items_paths:
+        with item_path.open("r", encoding="utf-8") as f:
+            item_dict = pystac.Item.from_dict(json.load(f))
+        collection.add_item(item_dict)
+        item_path.unlink()
+
+    return catalog

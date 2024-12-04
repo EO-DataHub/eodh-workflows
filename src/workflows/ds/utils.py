@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import dask.bag
+import dask.config
 import geopandas as gpd
 import rasterio
 import requests
@@ -29,11 +30,17 @@ DATASET_TO_CATALOGUE_LOOKUP = {
     "sentinel-2-l1c": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/earth-search-aws",
     "sentinel-2-l2a": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/earth-search-aws",
     "sentinel-2-l2a-ard": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/ceda-stac-catalogue",
+    "esa-lccci-glcm": f"{consts.stac.CEDA_CATALOG_API_ENDPOINT}",
+    "clms-corine-lc": f"{consts.stac.SH_CATALOG_API_ENDPOINT}",
+    "clms-water-bodies": f"{consts.stac.SH_CATALOG_API_ENDPOINT}",
 }
 DATASET_TO_COLLECTION_LOOKUP = {
     "sentinel-2-l1c": "sentinel-2-l1c",
     "sentinel-2-l2a": "sentinel-2-l2a",
     "sentinel-2-l2a-ard": "sentinel2_ard",
+    "esa-lccci-glcm": "land_cover",
+    "clms-corine-lc": "byoc-cbdba844-f86d-41dc-95ad-b3f7f12535e9",
+    "clms-water-bodies": "byoc-62bf6f6a-c584-48a8-a739-0bc60efee54a",
 }
 
 
@@ -116,13 +123,13 @@ def download_search_results(
     output_dir: Path,
     *,
     clip: bool = False,
-) -> list[tuple[str, Path]]:
+) -> list[Path]:
+    results = []  # Initialize a list to collect results
     progress_bar = tqdm(sorted(items, key=lambda x: x.datetime), desc="Processing items")
     for item in progress_bar:
         progress_bar.set_description(f"Working with: {item.id}")
 
-        # Save item JSON
-        item_output_dir = output_dir / item.id
+        item_output_dir = output_dir / "source_data" / item.id
         item_output_dir.mkdir(parents=True, exist_ok=True)
 
         item_modified = item.to_dict()
@@ -138,17 +145,40 @@ def download_search_results(
         # Filter non-raster items
         for asset_key, asset in item.assets.items():
             media_type = asset.media_type or Path(asset.href).suffix.replace(".", "")
-            if media_type.lower() not in {"tif", "tiff", "geotiff", "cog"}:
+            if media_type.lower() not in {
+                "image/tiff; application=geotiff; profile=cloud-optimized",
+                "tif",
+                "tiff",
+                "geotiff",
+                "cog",
+            }:
                 item_modified["assets"].pop(asset_key)
                 continue
 
         # Download assets in parallel using dask
+        dask.config.set({"distributed.comm.timeouts.tcp": "30s"})
         with LocalCluster(n_workers=N_WORKERS, threads_per_worker=THREADS_PER_WORKER) as cluster, DistributedClient(
             cluster
         ):
-            return (  # type: ignore[no-any-return]
+            _ = (
                 dask.bag.from_sequence(list(item_modified["assets"].items()), partition_size=1)
                 .map(handle_single_asset_dask, item_output_dir=item_output_dir, aoi=aoi, clip=clip)
                 .compute_from_item()
             )
-    return []
+
+        # Update hrefs to point to local files
+        for asset_tuple in item_modified["assets"].items():
+            asset_key, asset = asset_tuple
+            asset_filepath = item_output_dir / f"{asset_key}.tif"
+            item_modified["assets"][asset_key]["href"] = asset_filepath.as_posix()
+            if "role" in item_modified["assets"][asset_key]:
+                item_modified["assets"][asset_key]["roles"] = item_modified["assets"][asset_key]["role"]
+                item_modified["assets"][asset_key].pop("role")
+
+        # Save JSON definition of the item
+        item_path = item_output_dir / f"{item.id}.json"
+        with item_path.open("w", encoding="utf-8") as json_file:
+            json.dump(item_modified, json_file, indent=4, ensure_ascii=False)
+        results.append(item_path)
+
+    return results  # Return the complete dict of results
