@@ -28,18 +28,48 @@ def generate_stac(
     catalog.normalize_and_save(output_dir.as_posix(), catalog_type=pystac.CatalogType.SELF_CONTAINED)
 
 
-def prepare_stac_item(
+def prepare_stac_asset(
     file_path: Path,
+    title: str | None = None,
+    description: str | None = None,
+    asset_extra_fields: dict[str, Any] | None = None,
+) -> pystac.Asset:
+    if asset_extra_fields is None:
+        asset_extra_fields = {}
+
+    if "size" not in asset_extra_fields:
+        asset_extra_fields["size"] = file_path.stat().st_size
+
+    return pystac.Asset(
+        title=title,
+        description=description,
+        href=f"../{file_path.name}",
+        media_type=pystac.MediaType.COG,
+        extra_fields=asset_extra_fields,
+        roles=["data"],
+    )
+
+
+def prepare_thumbnail_asset(thumbnail_path: Path) -> pystac.Asset:
+    return pystac.Asset(
+        title="Thumbnail",
+        href=f"../{thumbnail_path.name}",
+        media_type=pystac.MediaType.PNG,
+        extra_fields={
+            "size": thumbnail_path.stat().st_size,
+        },
+        roles=["thumbnail"],
+    )
+
+
+def prepare_stac_item(
     id_item: str,
     geometry: Polygon,
     epsg: int,
     transform: list[float],
     datetime: str,
     additional_prop: dict[str, Any],
-    title: str | None = None,
-    description: str | None = None,
-    asset_extra_fields: dict[str, Any] | None = None,
-    thumbnail_path: Path | None = None,
+    assets: dict[str, pystac.Asset] | None = None,
 ) -> pystac.Item:
     item = pystac.Item(
         id=id_item,
@@ -54,35 +84,8 @@ def prepare_stac_item(
     projection.epsg = epsg
     projection.transform = transform
 
-    if asset_extra_fields is None:
-        asset_extra_fields = {}
-
-    if "size" not in asset_extra_fields:
-        asset_extra_fields["size"] = file_path.stat().st_size
-
-    item.add_asset(
-        key="data",
-        asset=pystac.Asset(
-            title=title,
-            description=description,
-            href=f"../{file_path.name}",
-            media_type=pystac.MediaType.COG,
-            extra_fields=asset_extra_fields,
-            roles=["data"],
-        ),
-    )
-    if thumbnail_path:
-        item.add_asset(
-            key="thumbnail",
-            asset=pystac.Asset(
-                title="Thumbnail",
-                href=f"../{thumbnail_path.name}",
-                media_type=pystac.MediaType.PNG,
-                extra_fields={
-                    "size": thumbnail_path.stat().st_size,
-                },
-                roles=["thumbnail"],
-            ),
-        )
+    if assets:
+        for asset_key, asset in assets.items():
+            item.add_asset(key=asset_key, asset=asset)
 
     return item

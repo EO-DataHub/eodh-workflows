@@ -21,7 +21,7 @@ def test_save_cog_with_defaults_no_reprojection(tmp_path: Path) -> None:
     mock_rio.write_crs.return_value = mock_data_array  # Mock that write_crs returns the DataArray itself
 
     # Call the function
-    result = save_cog(mock_data_array, item_id="item123", output_dir=tmp_path)
+    result = save_cog(mock_data_array, asset_id="item123", output_dir=tmp_path)
 
     # Check if write_crs was called with the correct EPSG
     mock_rio.write_crs.assert_called_once_with("EPSG:4326")
@@ -47,7 +47,7 @@ def test_save_cog_with_reprojection(tmp_path: Path) -> None:
     mock_rio.write_crs.return_value = mock_data_array  # Mock that write_crs returns the DataArray itself
 
     # Call the function
-    result = save_cog(mock_data_array, item_id="item123", output_dir=tmp_path)
+    result = save_cog(mock_data_array, asset_id="item123", output_dir=tmp_path)
 
     # Check if reproject was called because EPSG was different
     mock_rio.reproject.assert_called_once_with("EPSG:4326")

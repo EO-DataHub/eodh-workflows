@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 import warnings
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import click
+import numpy as np
 import rioxarray
 from pystac_client import Client
 from tqdm import tqdm
@@ -14,7 +15,7 @@ from src import consts
 from src.consts.crs import WGS84
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
 from src.geom_utils.transform import gejson_to_polygon
-from src.local_stac.generate import generate_stac, prepare_stac_item
+from src.local_stac.generate import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
 from src.raster_utils.helpers import get_raster_bounds
 from src.raster_utils.save import save_cog
 from src.raster_utils.thumbnail import (
@@ -24,14 +25,12 @@ from src.raster_utils.thumbnail import (
 from src.utils.logging import get_logger
 from src.workflows.raster.indices import SPECTRAL_INDICES
 
+if TYPE_CHECKING:
+    import pystac
+
 warnings.filterwarnings("ignore", category=UserWarning, message="The argument 'infer_datetime_format'")
 
 _logger = get_logger(__name__)
-JS_CM_TO_MPL_CL_LOOKUP = {
-    "RdBu": "RdBu",
-    "velocity-green": "YlGn",
-    "jet": "jet",
-}
 DATASET_TO_CATALOG_LOOKUP = {"sentinel-2-l2a": "supported-datasets/earth-search-aws"}
 
 
@@ -96,46 +95,23 @@ def calculate(
     output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
     output_dir.mkdir(exist_ok=True, parents=True)
 
-    if stac_collection not in consts.stac.STAC_COLLECTIONS:
-        msg = (
-            f"Unknown STAC collection provided: `{stac_collection}`. "
-            f"Available collections: {', '.join(consts.stac.STAC_COLLECTIONS)}"
-        )
-        raise ValueError(msg)
+    aoi_polygon: dict[str, Any] = json.loads(aoi)
+
+    sorted_items = query_stac(
+        aoi_polygon=aoi_polygon,
+        date_end=date_end,
+        date_start=date_start,
+        stac_collection=stac_collection,
+        limit=limit,
+    )
 
     index_calculator = SPECTRAL_INDICES[index]
     if stac_collection not in index_calculator.collection_assets_to_use:
         msg = f"Calculating `{index}` index is not possible for STAC collection `{stac_collection}`"
         raise ValueError(msg)
 
-    aoi_polygon = json.loads(aoi)
-
-    # Connect to STAC API
-    catalog = Client.open(
-        f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/{DATASET_TO_CATALOG_LOOKUP[stac_collection]}"
-    )
-
-    # Define your search with CQL2 syntax
-    filter_spec = {
-        "op": "and",
-        "args": [
-            {"op": "s_intersects", "args": [{"property": "geometry"}, aoi_polygon]},
-            {"op": "=", "args": [{"property": "collection"}, stac_collection]},
-        ],
-    }
-    if date_start:
-        filter_spec["args"].append({"op": ">=", "args": [{"property": "datetime"}, date_start]})  # type: ignore[attr-defined]
-    if date_end:
-        filter_spec["args"].append({"op": "<=", "args": [{"property": "datetime"}, date_end]})  # type: ignore[attr-defined]
-    search = catalog.search(
-        collections=[stac_collection],
-        filter_lang="cql2-json",
-        filter=filter_spec,
-        max_items=limit,
-    )
-
     output_items = []
-    progress_bar = tqdm(sorted(search.items(), key=lambda x: x.datetime), desc="Processing items")
+    progress_bar = tqdm(sorted_items, desc="Processing items")
     for item in progress_bar:
         progress_bar.set_description(f"Working with: {item.id}")
 
@@ -147,9 +123,8 @@ def calculate(
             index_raster = index_calculator.compute(
                 item=item,
                 bbox=gejson_to_polygon(aoi).bounds if clip == "True" else None,
-                collection_name=stac_collection,
             )
-            raster_path = save_cog(arr=index_raster, item_id=item.id, output_dir=output_dir, epsg=WGS84)
+            raster_path = save_cog(arr=index_raster, asset_id=item.id, output_dir=output_dir, epsg=WGS84)
 
         vmin, vmax, intervals = index_calculator.typical_range
         mpl_cmap, _ = index_calculator.mpl_colormap
@@ -164,11 +139,40 @@ def calculate(
         )
         thumb_b64 = image_to_base64(thump_fp)
 
-        output_items.append(
-            prepare_stac_item(
+        assets = {
+            "thumbnail": prepare_thumbnail_asset(thumbnail_path=thump_fp),
+            "data": prepare_stac_asset(
                 file_path=raster_path,
                 title=index_calculator.full_name,
-                thumbnail_path=thump_fp,
+                asset_extra_fields={
+                    "colormap": {
+                        "name": js_cmap,
+                        "reversed": cmap_reversed,
+                        "min": vmin,
+                        "max": vmax,
+                        "steps": intervals,
+                        "units": index_calculator.units,
+                    },
+                    "statistics": {
+                        "minimum": index_raster.min().item(),
+                        "maximum": index_raster.max().item(),
+                        "mean": index_raster.mean().item(),
+                        "median": index_raster.median().item(),
+                        "stddev": index_raster.std().item(),
+                        "valid_percent": (np.isnan(index_raster.data).sum() / np.prod(index_raster.shape)).item(),
+                    },
+                    "raster:bands": [
+                        {
+                            "nodata": np.nan,
+                            "unit": index_calculator.units,
+                        }
+                    ],
+                },
+            ),
+        }
+
+        output_items.append(
+            prepare_stac_item(
                 id_item=item.id,
                 geometry=get_raster_bounds(index_raster),
                 epsg=index_raster.rio.crs.to_epsg(),
@@ -183,16 +187,7 @@ def calculate(
                         "aoi": aoi_polygon,
                     },
                 },
-                asset_extra_fields={
-                    "colormap": {
-                        "name": js_cmap,
-                        "reversed": cmap_reversed,
-                        "min": vmin,
-                        "max": vmax,
-                        "steps": intervals,
-                        "units": index_calculator.units,
-                    },
-                },
+                assets=assets,
             )
         )
     generate_stac(
@@ -201,3 +196,46 @@ def calculate(
         title=f"EOPro {index.upper()} calculation",
         description=f"{index.upper()} calculation with {stac_collection}",
     )
+
+
+def query_stac(
+    aoi_polygon: dict[str, Any],
+    date_end: str,
+    date_start: str,
+    stac_collection: str,
+    limit: int | None = None,
+) -> list[pystac.Item]:
+    if stac_collection not in consts.stac.STAC_COLLECTIONS:
+        msg = (
+            f"Unknown STAC collection provided: `{stac_collection}`. "
+            f"Available collections: {', '.join(consts.stac.STAC_COLLECTIONS)}"
+        )
+        raise ValueError(msg)
+
+    # Connect to STAC API
+    catalog = Client.open(
+        f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/{DATASET_TO_CATALOG_LOOKUP[stac_collection]}"
+    )
+
+    # Define your search with CQL2 syntax
+    filter_spec = {
+        "op": "and",
+        "args": [
+            {"op": "s_intersects", "args": [{"property": "geometry"}, aoi_polygon]},
+            {"op": "=", "args": [{"property": "collection"}, stac_collection]},
+        ],
+    }
+
+    if date_start:
+        filter_spec["args"].append({"op": ">=", "args": [{"property": "datetime"}, date_start]})  # type: ignore[attr-defined]
+    if date_end:
+        filter_spec["args"].append({"op": "<=", "args": [{"property": "datetime"}, date_end]})  # type: ignore[attr-defined]
+
+    search = catalog.search(
+        collections=[stac_collection],
+        filter_lang="cql2-json",
+        filter=filter_spec,
+        max_items=limit,
+    )
+
+    return sorted(search.items(), key=lambda x: x.datetime)

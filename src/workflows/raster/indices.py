@@ -8,7 +8,6 @@ import numpy as np
 import rioxarray  # noqa: F401
 import stackstac
 import xarray
-from xarray import DataArray
 from xrspatial.multispectral import evi, ndvi, savi
 
 from src import consts
@@ -18,7 +17,7 @@ from src.consts.stac import SENTINEL_2_L2A_COLLECTION_NAME
 from src.utils.logging import get_logger
 
 if TYPE_CHECKING:
-    from pystac import Item
+    import pystac
     from rasterio import CRS
 
 _logger = get_logger(__name__)
@@ -49,7 +48,7 @@ def unify_asset_identifiers(assets_to_use: list[str], collection: str) -> list[s
     return [PLANETARY_COMPUTER_ASSET_LOOKUP[a] for a in assets_to_use]
 
 
-def rescale(data: DataArray, scale: float = 1e-4, offset: float = -0.1) -> DataArray:
+def rescale(data: xarray.DataArray, scale: float = 1e-4, offset: float = -0.1) -> xarray.DataArray:
     return data * scale + offset
 
 
@@ -83,7 +82,7 @@ def cya_cells_ml(
         Data array with Cyanobacteria in 1e6 cells / mL.
 
     """
-    data = 115_530.31 * ((green_agg * red_agg / (blue_agg + EPS)) ** 2.38) / 1e3
+    data = 115_530.31 * ((green_agg * red_agg / (blue_agg + EPS)) ** 2.38)
     result_arr = xarray.DataArray(
         data,
         name="cya",
@@ -154,7 +153,7 @@ def chl_a_high(
 
     """
     data = 19.866 * ((red_edge_agg / (red_agg + EPS)) ** 2.3051)
-    result_arr = DataArray(
+    result_arr = xarray.DataArray(
         data,
         name="chl-a-high",
         coords=red_edge_agg.coords,
@@ -189,7 +188,7 @@ def chl_a_low(
 
     """
     data = np.exp(-2.4792 * (np.log10(np.maximum(green_agg, blue_agg) / (green_agg + EPS))) - 0.0389)
-    result_arr = DataArray(
+    result_arr = xarray.DataArray(
         data,
         name="chl-a-low",
         coords=blue_agg.coords,
@@ -229,7 +228,7 @@ def chl_a_coastal(
         + 194.325 * (red_edge_agg - red_agg) / ((red_edge_agg + red_agg) ** 2 + EPS)
     )
     data = np.maximum(data, 0)
-    result_arr = DataArray(
+    result_arr = xarray.DataArray(
         data,
         name="chl-a-coastal",
         coords=red_agg.coords,
@@ -264,7 +263,7 @@ def turb(
 
     """
     data = 194.79 * (red_edge_agg * (red_edge_agg / (blue_agg + EPS))) + 0.9061
-    result_arr = DataArray(
+    result_arr = xarray.DataArray(
         data,
         name="turb",
         coords=red_edge_agg.coords,
@@ -298,7 +297,7 @@ def cdom(
         CDOM in ug / L.
     """
     data = 2.4072 * (red_agg / (blue_agg + EPS)) + 0.0709
-    result_arr = DataArray(
+    result_arr = xarray.DataArray(
         data,
         name="cdom",
         coords=blue_agg.coords,
@@ -332,7 +331,7 @@ def doc(
         DOC in mg / L.
     """
     data = 432 * np.exp(-2.24 * (green_agg / (red_agg + EPS)))
-    result_arr = DataArray(
+    result_arr = xarray.DataArray(
         data,
         name="doc",
         coords=red_agg.coords,
@@ -340,6 +339,33 @@ def doc(
         attrs=red_agg.attrs,
     )
     return result_arr.where(water_mask).rio.write_crs(crs)
+
+
+def prepare_data_array(
+    item: pystac.Item, assets: list[str], bbox: tuple[float, float, float, float] | None = None
+) -> xarray.DataArray:
+    mapped_asset_ids = unify_asset_identifiers(assets_to_use=assets, collection=item.collection_id)
+    return (
+        (
+            stackstac.stack(
+                [item],
+                assets=assets,
+                chunksize=consts.compute.CHUNK_SIZE,
+                bounds_latlon=bbox,
+                epsg=WGS84,
+            )
+        )
+        .assign_coords({"band": mapped_asset_ids})  # use common names
+        .squeeze()
+        .compute()
+    )
+
+
+def resolve_rescale_params(collection_name: str, item_datetime: datetime) -> tuple[float, float]:
+    if collection_name != "sentinel-2-l2a":  # EarthSearch AWS already uses rescale info in STAC metadata
+        return 1, 0
+    # Rescale - keep in mind baseline change on 25th of Jan. 2022
+    return (1e-4, -0.1) if item_datetime > datetime(2022, 1, 25, tzinfo=timezone.utc) else (1e-4, 0)
 
 
 class IndexCalculator(abc.ABC):
@@ -386,36 +412,13 @@ class IndexCalculator(abc.ABC):
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray: ...
 
-    @staticmethod
-    def resolve_rescale_params(item: Item) -> tuple[float, float]:
-        if item.collection_id != "sentinel-2-l2a":  # EarthSearch AWS already uses rescale info in STAC metadata
-            return 1, 0
-        # Rescale - keep in mind baseline change on 25th of Jan. 2022
-        return (1e-4, -0.1) if item.datetime > datetime(2022, 1, 25, tzinfo=timezone.utc) else (1e-4, 0)
-
     def compute(
         self,
-        item: Item,
-        collection_name: str,
+        item: pystac.Item,
         bbox: tuple[float, float, float, float] | None = None,
     ) -> xarray.DataArray:
-        assets = self.collection_assets_to_use[collection_name]
-        mapped_asset_ids = unify_asset_identifiers(assets_to_use=assets, collection=collection_name)
-        raster_arr = (
-            (
-                stackstac.stack(
-                    [item],
-                    assets=assets,
-                    chunksize=consts.compute.CHUNK_SIZE,
-                    bounds_latlon=bbox,
-                    epsg=WGS84,
-                )
-            )
-            .assign_coords({"band": mapped_asset_ids})  # use common names
-            .squeeze()
-            .compute()
-        )
-        scale, offset = self.resolve_rescale_params(item)
+        raster_arr = prepare_data_array(item=item, bbox=bbox, assets=self.collection_assets_to_use[item.collection_id])
+        scale, offset = resolve_rescale_params(collection_name=item.collection_id, item_datetime=item.datetime)
         return self.calculate_index(raster_arr, scale, offset)
 
 
@@ -595,7 +598,7 @@ class CyaCells(IndexCalculator):
 
     @property
     def units(self) -> str:
-        return "cells / mL"
+        return "1e6 cells / mL"
 
     @property
     def mpl_colormap(self) -> tuple[str, bool]:
