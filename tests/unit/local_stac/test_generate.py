@@ -75,13 +75,13 @@ def test_prepare_stac_item(
     # Check asset
     assert "data" in item.assets
     asset = item.assets["data"]
-    assert asset.href == f"../{example_cog_path.name}"
+    assert asset.href == example_cog_path.as_posix()
     assert asset.media_type == pystac.MediaType.COG
     assert asset.extra_fields == asset_extra_fields
 
     assert "thumbnail" in item.assets
     asset = item.assets["thumbnail"]
-    assert asset.href == f"../{example_thumbnail_fp.name}"
+    assert asset.href == example_thumbnail_fp.as_posix()
     assert asset.media_type == pystac.MediaType.PNG
     assert asset.extra_fields == {
         "size": example_thumbnail_fp.stat().st_size,

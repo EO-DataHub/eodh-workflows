@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from pystac import Item
     from xarray import DataArray
 
-    from src.workflows.lulc.generate_change import DataSource
+    from src.workflows.raster.download import DataSource
 
 EVALSCRIPT_MAPPING = {
     consts.stac.SH_CLMS_CORINELC_LOCAL_NAME: consts.sentinel_hub.SH_EVALSCRIPT_CORINELC,
