@@ -5,15 +5,21 @@ from pathlib import Path
 from typing import Any, Literal
 
 import click
+import pystac
 from pystac_client import Client
+from shapely.geometry import mapping
 
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.data_helpers.sh_auth import sh_auth_token
+from src.geom_utils.transform import gejson_to_polygon
+from src.local_stac.generate import prepare_local_stac
 from src.utils.logging import get_logger
 from src.workflows.ds.utils import (
     DATASET_TO_CATALOGUE_LOOKUP,
     DATASET_TO_COLLECTION_LOOKUP,
     download_search_results,
 )
+from src.workflows.ds.utils_sentinelhub import download_sentinel_hub
 
 _logger = get_logger(__name__)
 
@@ -54,7 +60,7 @@ _logger = get_logger(__name__)
 )
 @click.option(
     "--output_dir",
-    type=click.Path(path_type=Path),  # type: ignore[type-var]
+    type=click.Path(path_type=Path, resolve_path=True),  # type: ignore[type-var]
     help="Path to the output directory - will create new dir in CWD/data/stac-catalog if not provided",
 )
 @click.option(
@@ -145,7 +151,9 @@ def query(
             aoi=aoi,
             date_start=date_start,
             date_end=date_end,
+            clip=clip,
             limit=limit,
+            output_dir=output_dir,
         )
 
     elif stac_collection == "esa-lccci-glcm":
@@ -153,7 +161,9 @@ def query(
             aoi=aoi,
             date_start=date_start,
             date_end=date_end,
+            clip=clip,
             limit=limit,
+            output_dir=output_dir,
         )
 
     else:
@@ -218,14 +228,27 @@ def handle_s2_query(
         filter=filter_spec,
         max_items=limit,
     )
-    _ = download_search_results(
+
+    downloaded = download_search_results(
         items=search.items(),
         aoi=aoi,
         output_dir=output_dir,
         clip=clip == "True",
     )
 
-    # TODO create STAC catalog
+    aoi_polygon = gejson_to_polygon(json.dumps(aoi))
+
+    new_catalog = prepare_local_stac(
+        items_paths=downloaded,
+        title=f"Downloaded {stac_collection}",
+        description=f"Query for {date_start} - {date_end}",
+        spatial_extent=aoi_polygon.bounds,
+        temp_extent=(date_start, date_end),
+    )
+
+    new_catalog.normalize_hrefs(output_dir.as_posix())
+    new_catalog.make_all_asset_hrefs_relative()
+    new_catalog.normalize_and_save(output_dir.as_posix(), catalog_type=pystac.CatalogType.SELF_CONTAINED)
 
 
 def handle_esa_cci_glc_query(
@@ -233,8 +256,45 @@ def handle_esa_cci_glc_query(
     date_start: str,
     date_end: str,
     limit: int = 50,
+    clip: Literal["True", "False"] = "True",
     output_dir: Path | None = None,
-) -> None: ...
+) -> None:
+    # Ensure output directory is set
+    if output_dir is None:
+        output_dir = Path("./stac_downloads")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    aoi_polygon = gejson_to_polygon(json.dumps(aoi))
+
+    catalog = Client.open(DATASET_TO_CATALOGUE_LOOKUP["esa-lccci-glcm"])
+    search = catalog.search(
+        collections=[DATASET_TO_COLLECTION_LOOKUP["esa-lccci-glcm"]],
+        datetime=f"{date_start}/{date_end}",
+        intersects=mapping(aoi_polygon),
+        max_items=limit,
+    )
+
+    if clip == "False":
+        _logger.warning("Argument clip=False is not supported, data will be clipped to provided aoi.")
+
+    downloaded = download_search_results(
+        items=search.items(),
+        aoi=aoi,
+        output_dir=output_dir,
+        clip=True,
+    )
+
+    new_catalog = prepare_local_stac(
+        items_paths=downloaded,
+        title="Downloaded esa-lccci-glcm",
+        description=f"Query for {date_start} - {date_end}",
+        spatial_extent=aoi_polygon.bounds,
+        temp_extent=(date_start, date_end),
+    )
+
+    new_catalog.normalize_hrefs(output_dir.as_posix())
+    new_catalog.make_all_asset_hrefs_relative()
+    new_catalog.normalize_and_save(output_dir.as_posix(), catalog_type=pystac.CatalogType.SELF_CONTAINED)
 
 
 def handle_sh_query(
@@ -243,5 +303,42 @@ def handle_sh_query(
     date_start: str,
     date_end: str,
     limit: int = 50,
+    clip: Literal["True", "False"] = "False",
     output_dir: Path | None = None,
-) -> None: ...
+) -> None:
+    # Ensure output directory is set
+    if output_dir is None:
+        output_dir = Path("./stac_downloads")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    aoi_polygon = gejson_to_polygon(json.dumps(aoi))
+
+    # Sentinel Hub requires authentication
+    token = sh_auth_token()
+
+    catalog = Client.open(DATASET_TO_CATALOGUE_LOOKUP[stac_collection], headers={"Authorization": f"Bearer {token}"})
+    search = catalog.search(
+        collections=[DATASET_TO_COLLECTION_LOOKUP[stac_collection]],
+        datetime=f"{date_start}/{date_end}",
+        intersects=mapping(aoi_polygon),
+        max_items=limit,
+    )
+
+    if clip == "False":
+        _logger.warning("Argument clip=False is not supported, data will be clipped to provided aoi.")
+
+    downloaded = download_sentinel_hub(
+        items=search.items(), aoi=aoi, output_dir=output_dir, token=token, stac_collection=stac_collection, clip=True
+    )
+
+    new_catalog = prepare_local_stac(
+        items_paths=downloaded,
+        title=f"Downloaded {stac_collection}",
+        description=f"Query for {date_start} - {date_end}",
+        spatial_extent=aoi_polygon.bounds,
+        temp_extent=(date_start, date_end),
+    )
+
+    new_catalog.normalize_hrefs(output_dir.as_posix())
+    new_catalog.make_all_asset_hrefs_relative()
+    new_catalog.normalize_and_save(output_dir.as_posix(), catalog_type=pystac.CatalogType.SELF_CONTAINED)
