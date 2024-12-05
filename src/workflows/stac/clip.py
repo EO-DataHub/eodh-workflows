@@ -34,14 +34,19 @@ _logger = get_logger(__name__)
 @click.option("--area", required=True, help="Area of Interest as GeoJSON to be used for clipping; in EPSG:4326")
 @click.option(
     "--output_dir",
+    required=False,
     type=click.Path(path_type=Path, resolve_path=True),  # type: ignore[type-var]
     help="Path to the output directory - will create new dir in CWD if not provided",
 )
-def clip_stac_items(input_stac: Path, area: str, output_dir: Path) -> None:
+def clip_stac_items(input_stac: Path, area: str, output_dir: Path | None = None) -> None:
     _logger.info(
         "Running with:\n%s",
         json.dumps(
-            {"input_stac": input_stac.as_posix(), "aoi": area, "output_dir": output_dir.as_posix()},
+            {
+                "input_stac": input_stac.as_posix(),
+                "aoi": area,
+                "output_dir": output_dir.as_posix() if output_dir is not None else None,
+            },
             indent=4,
         ),
     )
@@ -117,6 +122,9 @@ def _clip_raster(file_path: Path, aoi: Polygon, output_file_path: Path | None = 
         # Clip the raster using the AOI
         out_image, out_transform = rasterio.mask.mask(src, [aoi], all_touched=True, crop=True)
 
+        # Replace nodata values with 0
+        nodata_value = src.nodata if src.nodata is not None else 0
+
         # Update metadata
         out_meta = src.meta.copy()
         out_meta.update({
@@ -124,6 +132,7 @@ def _clip_raster(file_path: Path, aoi: Polygon, output_file_path: Path | None = 
             "height": out_image.shape[1],
             "width": out_image.shape[2],
             "transform": out_transform,
+            "nodata": nodata_value,
         })
 
     # Write the clipped raster to the output path
