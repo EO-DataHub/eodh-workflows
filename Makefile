@@ -15,6 +15,8 @@ IMAGE_NAME=eodh-workflows
 CONTAINER_NAME=eodh-workflows
 DOCKERFILE_PATH=.
 
+INDEX=ndvi
+
 define PRINT_HELP_PYSCRIPT
 import re, sys
 
@@ -193,20 +195,20 @@ docker-rebuild: docker-stop docker-rm docker-rmi docker-all
 
 # CWL workflow execution commands
 
-.PHONY: cwl-ndvi  ## Runs NDVI calculation
-cwl-ndvi:
+.PHONY: cwl-ndvi  ## Runs Raster Calculator
+cwl-raster-calculator:
 	@cwltool ./cwl_files/local/raster-calculate-app.cwl\#raster-calculate \
 		--stac_collection sentinel-2-l2a \
 		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--date_start 2024-01-01T00:00:00Z \
 		--date_end 2024-12-31T23:59:59Z \
 		--limit=2 \
-		--index=ndvi \
+		--index=$(INDEX) \
 		--clip=True
 
 .PHONY: cwl-corinelc  ## Runs LULC Change with CORINE
 cwl-corinelc:
-	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
+	@cwltool ./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
 		--source clms-corinelc \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 		--date_start 2006-01-01T00:00:00Z \
@@ -214,7 +216,7 @@ cwl-corinelc:
 
 .PHONY: cwl-globallc  ## Runs LULC Change with ESA GLC
 cwl-globallc:
-	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
+	@cwltool ./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
 		--source esacci-globallc \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 		--date_start 2008-01-01T00:00:00Z \
@@ -222,8 +224,18 @@ cwl-globallc:
 
 .PHONY: cwl-water-bodies  ## Runs LULC Change with Water Bodies
 cwl-water-bodies:
-	@cwltool ./cwl_files/local/lulc-change-app.cwl\#lulc-change \
+	@cwltool ./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
 		--source clms-water-bodies \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 		--date_start 2024-01-01T00:00:00Z \
 		--date_end 2024-03-31T23:59:59Z
+
+.PHONY: cwl-water-quality  ## Runs Water Quality app
+cwl-water-quality:
+	@cwltool ./cwl_files/local/water-quality-app.cwl\#water-quality \
+		--stac_collection sentinel-2-l2a \
+		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+		--date_start 2024-01-01T00:00:00Z \
+		--date_end 2024-12-31T23:59:59Z \
+		--limit=5 \
+		--clip=True
