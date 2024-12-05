@@ -19,7 +19,7 @@ from src.data_helpers.get_classes_dicts import get_classes, get_classes_orig_dic
 from src.data_helpers.sh_auth import sh_auth_token
 from src.geom_utils.calculate import calculate_geodesic_area
 from src.geom_utils.transform import gejson_to_polygon
-from src.local_stac.generate import generate_stac, prepare_stac_item
+from src.local_stac.generate import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
 from src.raster_utils.build import build_raster_array
 from src.raster_utils.helpers import get_raster_bounds
 from src.raster_utils.save import save_cog
@@ -90,6 +90,7 @@ def generate_lulc_change(
     output_dir.mkdir(exist_ok=True, parents=True)
 
     source_ds: DataSource = DATASOURCE_LOOKUP[source]
+
     # Transferring the AOI
     aoi_polygon = gejson_to_polygon(aoi)
 
@@ -119,7 +120,7 @@ def generate_lulc_change(
         raster_arr.attrs["lulc_classes_m2"] = classes_m2
 
         # Save COG with lulc change values in metadata
-        raster_path = save_cog(arr=raster_arr, item_id=item.id, epsg=WGS84, output_dir=output_dir)
+        raster_path = save_cog(arr=raster_arr, asset_id=item.id, epsg=WGS84, output_dir=output_dir)
         thump_fp = generate_thumbnail_with_discrete_classes(
             raster_arr,
             raster_path=raster_path,
@@ -128,12 +129,21 @@ def generate_lulc_change(
         )
         thumb_b64 = image_to_base64(thump_fp)
 
+        assets = {
+            "thumbnail": prepare_thumbnail_asset(thump_fp),
+            "data": prepare_stac_asset(
+                title=DATASOURCE_LOOKUP[source].name,
+                file_path=raster_path,
+                asset_extra_fields={
+                    "classification:classes": classes_orig_dict,
+                },
+            ),
+        }
+
         # Create STAC definition for each item processed
         # Include lulc change in STAC item properties
         stac_items.append(
             prepare_stac_item(
-                file_path=raster_path,
-                thumbnail_path=thump_fp,
                 id_item=item.id,
                 geometry=bounds_polygon,
                 epsg=raster_arr.rio.crs.to_epsg(),
@@ -150,9 +160,7 @@ def generate_lulc_change(
                         "aoi": mapping(aoi_polygon),
                     },
                 },
-                asset_extra_fields={
-                    "classification:classes": classes_orig_dict,
-                },
+                assets=assets,
             )
         )
 

@@ -149,6 +149,6 @@ def download_search_results(
             return (  # type: ignore[no-any-return]
                 dask.bag.from_sequence(list(item_modified["assets"].items()), partition_size=1)
                 .map(handle_single_asset_dask, item_output_dir=item_output_dir, aoi=aoi, clip=clip)
-                .compute()
+                .compute_from_item()
             )
     return []

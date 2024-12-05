@@ -8,7 +8,7 @@ import pytest
 from shapely.geometry import Polygon, mapping
 
 from src import consts
-from src.local_stac.generate import generate_stac, prepare_stac_item
+from src.local_stac.generate import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -48,16 +48,22 @@ def test_prepare_stac_item(
     asset_extra_fields = {"field": [{"subfield": "value"}]}
 
     # Call the function
+    assets = {
+        "thumbnail": prepare_thumbnail_asset(example_thumbnail_fp),
+        "data": prepare_stac_asset(
+            file_path=example_cog_path,
+            asset_extra_fields=asset_extra_fields,
+        ),
+    }
+
     item = prepare_stac_item(
-        file_path=example_cog_path,
-        thumbnail_path=example_thumbnail_fp,
         id_item=id_item,
         geometry=example_polygon,
         epsg=epsg,
         transform=example_transform,
         datetime=datetime_str,
         additional_prop=additional_prop,
-        asset_extra_fields=asset_extra_fields,
+        assets=assets,
     )
 
     # Assertions for pystac.Item attributes
