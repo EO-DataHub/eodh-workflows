@@ -32,11 +32,15 @@ _logger = get_logger(__name__)
 )
 @click.option(
     "--output_dir",
+    required=False,
     type=click.Path(path_type=Path, resolve_path=True),  # type: ignore[type-var]
     help="Path to the output directory - will create new dir in CWD if not provided",
 )
-def generate_lulc_change(input_stac: Path, output_dir: Path) -> None:
-    initial_arguments = {"input_stac": input_stac.as_posix(), "output_dir": output_dir.as_posix()}
+def generate_lulc_change(input_stac: Path, output_dir: Path | None = None) -> None:
+    initial_arguments = {
+        "input_stac": input_stac.as_posix(),
+        "output_dir": output_dir.as_posix() if output_dir is not None else None,
+    }
     _logger.info(
         "Running with:\n%s",
         json.dumps(initial_arguments, indent=4),

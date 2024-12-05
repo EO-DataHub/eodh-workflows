@@ -81,6 +81,9 @@ def _download_sh_item(
         cog_data = BytesIO(response.content)
         data_arr = rioxarray.open_rasterio(cog_data, chunks=consts.compute.CHUNK_SIZE)
 
+        if data_arr.rio.nodata is None:
+            data_arr.rio.write_nodata(0, inplace=True)
+
         return save_cog_v2(arr=data_arr, output_file_path=item_output_dir / "data.tif")
     error_message = f"Error: {response.status_code}, : {response.text}"
     raise requests.HTTPError(error_message)
