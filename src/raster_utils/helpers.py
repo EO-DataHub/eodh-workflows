@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import geopandas as gpd
 import numpy as np
 from rasterio.features import shapes
 from shapely.geometry import MultiPolygon, Polygon, box, shape
@@ -35,9 +34,4 @@ def get_raster_polygon(xarr: xr.DataArray) -> Polygon:
         raise ValueError(error_message)
 
     # Combine polygons into a single geometry
-    unified_polygon = polygons[0] if len(polygons) == 1 else MultiPolygon(polygons).union
-
-    gdf = gpd.GeoDataFrame([{"geometry": unified_polygon, "name": "Convex Hull"}], crs=xarr.rio.crs)
-    gdf.to_file(r"C:\Users\jas\eodh-workflows\data\test.geojson", driver="GeoJSON")
-
-    return unified_polygon
+    return polygons[0] if len(polygons) == 1 else MultiPolygon(polygons).union

@@ -102,7 +102,12 @@ def clip_stac_items(input_stac: Path, area: str, output_dir: Path | None = None)
     write_local_stac(local_stac, output_dir, "EOPro Clipped Data", "EOPro Clipped Data")
 
 
-def _clip_raster(file_path: Path, aoi: Polygon, output_file_path: Path | None = None) -> Path:
+def _clip_raster(
+    file_path: Path,
+    aoi: Polygon,
+    output_file_path: Path | None = None,
+    nodata_val: float | None = None,
+) -> Path:
     # Determine the output path
     output_file_path = file_path if output_file_path is None else output_file_path
 
@@ -122,8 +127,8 @@ def _clip_raster(file_path: Path, aoi: Polygon, output_file_path: Path | None = 
         # Clip the raster using the AOI
         out_image, out_transform = rasterio.mask.mask(src, [aoi], all_touched=True, crop=True)
 
-        # Replace nodata values with 0
-        nodata_value = src.nodata if src.nodata is not None else 0
+        # Replace nodata values if needed
+        nodata_value = src.nodata if src.nodata is not None else nodata_val
 
         # Update metadata
         out_meta = src.meta.copy()
