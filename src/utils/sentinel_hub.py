@@ -6,15 +6,18 @@ from typing import TYPE_CHECKING
 
 import requests
 import rioxarray
-from xarray import DataArray
+from oauthlib.oauth2 import BackendApplicationClient
+from requests import Response
+from requests_oauthlib import OAuth2Session
 
 from src import consts
+from src.core.settings import current_settings
 
 if TYPE_CHECKING:
     from pystac import Item
     from xarray import DataArray
 
-    from src.workflows.lulc.generate_change import DataSource
+    from src.workflows.lulc.helpers import DataSource
 
 EVALSCRIPT_MAPPING = {
     consts.stac.SH_CLMS_CORINELC_LOCAL_NAME: consts.sentinel_hub.SH_EVALSCRIPT_CORINELC,
@@ -75,3 +78,25 @@ def sh_get_data(
         return data_arr
     error_message = f"Error: {response.status_code}, : {response.text}"
     raise requests.HTTPError(error_message)
+
+
+def sh_auth_token() -> str:
+    settings = current_settings()
+
+    client = BackendApplicationClient(client_id=settings.sh_client_id)
+    oauth = OAuth2Session(client=client)
+
+    oauth.register_compliance_hook("access_token_response", _sentinelhub_compliance_hook)
+
+    token = oauth.fetch_token(
+        token_url=consts.sentinel_hub.SH_TOKEN_URL,
+        client_secret=settings.sh_secret,
+        include_client_id=True,
+    )
+
+    return str(token["access_token"])
+
+
+def _sentinelhub_compliance_hook(response: Response) -> Response:
+    response.raise_for_status()
+    return response

@@ -14,15 +14,10 @@ from tqdm import tqdm
 from src import consts
 from src.consts.crs import WGS84
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
-from src.geom_utils.transform import gejson_to_polygon
-from src.local_stac.generate import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
-from src.raster_utils.helpers import get_raster_bounds
-from src.raster_utils.save import save_cog
-from src.raster_utils.thumbnail import (
-    generate_thumbnail_with_continuous_colormap,
-    image_to_base64,
-)
+from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
+from src.utils.raster import generate_thumbnail_with_continuous_colormap, get_raster_bounds, image_to_base64, save_cog
+from src.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
 from src.workflows.raster.indices import SPECTRAL_INDICES
 
 if TYPE_CHECKING:
@@ -122,7 +117,7 @@ def calculate(
         else:
             index_raster = index_calculator.compute(
                 item=item,
-                bbox=gejson_to_polygon(aoi).bounds if clip == "True" else None,
+                bbox=geojson_to_polygon(aoi).bounds if clip == "True" else None,
             )
             raster_path = save_cog(arr=index_raster, asset_id=item.id, output_dir=output_dir, epsg=WGS84)
 

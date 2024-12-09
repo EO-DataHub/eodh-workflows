@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import xarray as xr
 
-from src.raster_utils.save import save_cog
+from src.utils.raster import save_cog
 
 if TYPE_CHECKING:
     from pathlib import Path

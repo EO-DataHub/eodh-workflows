@@ -88,5 +88,6 @@ SH_EVALSCRIPT_WATERBODIES = """
 """
 SH_CLASSES_DICT_WATERBODIES = [
     {"value": 70, "description": "Water body", "color-hint": "0000ff"},
+    {"value": 251, "description": "Not water body", "color-hint": "ffffff"},
 ]
 SH_NODATA_WATERBODIES = 251
