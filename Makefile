@@ -197,57 +197,71 @@ docker-rebuild: docker-stop docker-rm docker-rmi docker-all
 
 .PHONY: query-s2 ## Query Sentinel-2
 query-s2:
-	eopro ds query --stac_collection sentinel-2-l2a \
+	eopro ds query \
+	--stac_collection sentinel-2-l2a \
 	--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 	--date_start 2024-01-01T00:00:00Z \
 	--date_end 2024-12-31T23:59:59Z \
-	--output_dir "./data/stac_downloaded_s2"
+	--output_dir "./data/processed/eopro/ds-query/s2"
 
 .PHONY: clip-s2 ## Works after query-s2
 clip-s2:
-	eopro stac clip --input_stac "./data/stac_downloaded_s2" \
+	eopro raster clip \
+	--input_stac "./data/processed/eopro/ds-query/s2" \
 	--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.65,4.35],[71.8,4.35],[71.8,4.5],[71.65,4.5],[71.65,4.35]]]}" \
-	--output_dir "./data/clipped_s2"
+	--output_dir "./data/processed/eopro/raster-clip/s2"
 
 .PHONY: query-globallc ## Query ESA Global LC
 query-globallc:
-	eopro ds query --stac_collection esa-lccci-glcm \
+	eopro ds query \
+ 	--stac_collection esa-lccci-glcm \
 	--area "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 	--date_start 2008-01-01T00:00:00Z \
 	--date_end 2010-12-31T23:59:59Z \
-	--output_dir "./data/stac_downloaded_globallc"
+	--output_dir "./data/processed/eopro/ds-query/esa-lccci-glcm"
 
 .PHONY: clip-globallc ## Works after query-globallc
 clip-globallc:
-	eopro stac clip --input_stac "./data/stac_downloaded_globallc" \
+	eopro raster clip \
+ 	--input_stac "./data/processed/eopro/ds-query/esa-lccci-glcm" \
 	--area "{\"type\": \"Polygon\",\"coordinates\": [[[15.0, 50.9],[15.03, 50.9],[15.03, 50.95],[15.0, 50.95],[15.0, 50.9]]]}" \
-	--output_dir "./data/clipped_globallc"
+	--output_dir "./data/processed/eopro/raster-clip/esa-lccci-glcm"
 
 .PHONY: lulc-change-globallc ## Works after query-globallc or clip-globallc
 lulc-change-globallc:
-	eopro lulc change --input_stac "./data/clipped_globallc" \
-	--output_dir "./data/summarized_globallc"
+	eopro classification summarize \
+	--input_stac "./data/processed/eopro/raster-clip/esa-lccci-glcm" \
+	--output_dir "./data/processed/eopro/classification-summarize/esa-lccci-glcm"
 
 .PHONY: query-corine ## Query CORINE Land Cover
 query-corine:
-	eopro ds query --stac_collection clms-corine-lc \
+	eopro ds query \
+ 	--stac_collection clms-corine-lc \
 	--area "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 	--date_start 2006-01-01T00:00:00Z \
 	--date_end 2018-12-31T23:59:59Z \
-	--output_dir "./data/stac_downloaded_corine"
+	--output_dir "./data/processed/eopro/ds-query/corine"
+
+.PHONY: lulc-change-corine ## Works after query-corine
+lulc-change-corine:
+	eopro classification summarize \
+	--input_stac "./data/processed/eopro/ds-query/corine" \
+	--output_dir "./data/processed/eopro/classification-summarize/corine"
 
 .PHONY: query-wb ## Query Water Bodies
 query-wb:
-	eopro ds query --stac_collection clms-water-bodies \
+	eopro ds query \
+	--stac_collection clms-water-bodies \
 	--area "{\"type\": \"Polygon\",\"coordinates\": [[[14.82449, 50.99583],[14.82449, 51.15208],[15.09065, 51.15208],[15.09065, 50.99583],[14.82449, 50.99583]]]}" \
 	--date_start 2024-01-01T00:00:00Z \
 	--date_end 2024-03-31T23:59:59Z \
-	--output_dir "./data/stac_downloaded_waterbodies"
+	--output_dir "./data/processed/eopro/ds-query/water-bodies"
 
 .PHONY: lulc-change-wb ## Works after query-wb
 lulc-change-wb:
-	eopro lulc change --input_stac "./data/stac_downloaded_waterbodies" \
-	--output_dir "./data/summarized_wb"
+	eopro classification summarize \
+	--input_stac "./data/processed/eopro/ds-query/water-bodies" \
+	--output_dir "./data/processed/eopro/classification-summarize/water-bodies"
 
 # CWL workflow execution commands
 

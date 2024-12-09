@@ -6,24 +6,115 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 import numpy as np
-import rioxarray  # noqa: F401
+import stackstac
 from matplotlib import cm
 from PIL import Image
 from rasterio.enums import Resampling
+from rasterio.features import shapes
+from shapely import MultiPolygon, Polygon
+from shapely.geometry import box, shape
 
 from src import consts
-from src.consts.crs import PSEUDO_MERCATOR
+from src.consts.crs import PSEUDO_MERCATOR, WGS84
 from src.utils.logging import get_logger
+from src.utils.sentinel_hub import sh_auth_token, sh_get_data
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import xarray
+    import xarray as xr
+    from pystac import Item
 
-# current scope doesn't require using multiple bands
-EXPECTED_NDIM = 2
+    from src.workflows.lulc.helpers import DataSource
 
 _logger = get_logger(__name__)
+
+EXPECTED_NDIM = 2
+
+
+def build_raster_array(
+    source: DataSource,
+    item: Item,
+    bbox: tuple[int | float, int | float, int | float, int | float],
+    epsg: int = WGS84,
+) -> xr.DataArray:
+    if source.catalog == consts.stac.CEDA_CATALOG_API_ENDPOINT:
+        return (
+            stackstac.stack(
+                item,
+                assets=["GeoTIFF"],
+                chunksize=consts.compute.CHUNK_SIZE,
+                bounds_latlon=bbox,
+                epsg=epsg,
+                resolution=(
+                    float(item.properties.get("geospatial_lon_resolution")),
+                    float(item.properties.get("geospatial_lat_resolution")),
+                ),
+            )
+            .squeeze()
+            .compute()
+        )
+    if source.catalog == consts.stac.SH_CATALOG_API_ENDPOINT:
+        token = sh_auth_token()
+        return sh_get_data(token=token, source=source, bbox=bbox, stac_collection=source.collection, item=item)
+    error_message = "Unsupported STAC catalog"
+    raise ValueError(error_message)
+
+
+def get_raster_bounds(xarr: xr.DataArray) -> Polygon:
+    """Calculates bounds for the raster array."""
+    bbox = xarr.rio.bounds()
+    minx, miny, maxx, maxy = bbox
+
+    return box(minx, miny, maxx, maxy)
+
+
+def get_raster_polygon(xarr: xr.DataArray) -> Polygon:
+    # Mask NaNs (True where data is valid)
+    valid_mask = ~np.isnan(xarr.values)
+
+    # Extract valid geometries using rasterio.features.shapes
+    transform = xarr.rio.transform()
+    shapes_generator = shapes(valid_mask.astype(np.uint8), transform=transform)
+
+    # Collect all polygons
+    polygons = [shape(geom) for geom, value in shapes_generator if value == 1]
+
+    if not polygons:
+        error_message = "No valid data found to create a polygon."
+        raise ValueError(error_message)
+
+    # Combine polygons into a single geometry
+    return polygons[0] if len(polygons) == 1 else MultiPolygon(polygons).union
+
+
+def save_cog(arr: xr.DataArray, asset_id: str, output_dir: Path, epsg: int = WGS84) -> Path:
+    _logger.info("Saving '%s' COG to %s", asset_id, output_dir.as_posix())
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if arr.rio.crs is None:
+        _logger.warning("CRS on `rio` accessor for asset '%s' was not set. Will assume %s", asset_id, epsg)
+        arr = arr.rio.write_crs(f"EPSG:{epsg}")
+
+    if arr.rio.crs.to_epsg() != epsg:
+        arr = arr.rio.reproject(f"EPSG:{epsg}")
+
+    arr = arr.rio.write_crs(f"EPSG:{epsg}")
+    arr.rio.to_raster(output_dir / f"{asset_id}.tif", driver="COG", windowed=True)
+
+    return output_dir / f"{asset_id}.tif"
+
+
+def save_cog_v2(arr: xr.DataArray, output_file_path: Path) -> Path:
+    _logger.info("Saving '%s' COG to %s", output_file_path.name, output_file_path.as_posix())
+    output_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if arr.rio.crs is None:
+        _logger.warning("CRS on `rio` accessor for item '%s' was not set", output_file_path.as_posix())
+
+    arr.rio.to_raster(output_file_path.as_posix(), driver="COG", windowed=True)
+
+    return output_file_path
 
 
 def _create_color_mapping(classes_list: list[dict[str, int | str]]) -> dict[int, str]:
@@ -31,7 +122,7 @@ def _create_color_mapping(classes_list: list[dict[str, int | str]]) -> dict[int,
 
 
 def generate_thumbnail_with_discrete_classes(
-    data: xarray.DataArray,
+    data: xr.DataArray,
     raster_path: Path,
     output_dir: Path,
     classes_list: list[dict[str, int | str]],
@@ -82,7 +173,7 @@ def generate_thumbnail_with_discrete_classes(
 
 
 def generate_thumbnail_with_continuous_colormap(
-    data: xarray.DataArray,
+    data: xr.DataArray,
     raster_path: Path,
     colormap: str,
     output_dir: Path,
