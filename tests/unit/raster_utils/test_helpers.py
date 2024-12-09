@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 from shapely.geometry import Polygon, box
 
-from src.raster_utils.helpers import get_raster_bounds  # Change to the correct module name
+from src.utils.raster import get_raster_bounds
 
 
 def test_get_raster_bounds() -> None:

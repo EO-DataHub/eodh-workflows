@@ -10,16 +10,16 @@ from pystac_client import Client
 from shapely.geometry import mapping
 
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
-from src.data_helpers.sh_auth import sh_auth_token
-from src.geom_utils.transform import gejson_to_polygon
-from src.local_stac.generate import prepare_local_stac
+from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
+from src.utils.sentinel_hub import sh_auth_token
+from src.utils.stac import prepare_local_stac
 from src.workflows.ds.utils import (
     DATASET_TO_CATALOGUE_LOOKUP,
     DATASET_TO_COLLECTION_LOOKUP,
     download_search_results,
+    download_sentinel_hub,
 )
-from src.workflows.ds.utils_sentinelhub import download_sentinel_hub
 
 _logger = get_logger(__name__)
 
@@ -236,7 +236,7 @@ def handle_s2_query(
         clip=clip == "True",
     )
 
-    aoi_polygon = gejson_to_polygon(json.dumps(aoi))
+    aoi_polygon = geojson_to_polygon(json.dumps(aoi))
 
     new_catalog = prepare_local_stac(
         items_paths=downloaded,
@@ -264,7 +264,7 @@ def handle_esa_cci_glc_query(
         output_dir = Path("./stac_downloads")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    aoi_polygon = gejson_to_polygon(json.dumps(aoi))
+    aoi_polygon = geojson_to_polygon(json.dumps(aoi))
 
     catalog = Client.open(DATASET_TO_CATALOGUE_LOOKUP["esa-lccci-glcm"])
     search = catalog.search(
@@ -281,6 +281,7 @@ def handle_esa_cci_glc_query(
         items=search.items(),
         aoi=aoi,
         output_dir=output_dir,
+        asset_rename={"GeoTIFF": "data"},
         clip=True,
     )
 
@@ -311,7 +312,7 @@ def handle_sh_query(
         output_dir = Path("./stac_downloads")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    aoi_polygon = gejson_to_polygon(json.dumps(aoi))
+    aoi_polygon = geojson_to_polygon(json.dumps(aoi))
 
     # Sentinel Hub requires authentication
     token = sh_auth_token()
@@ -328,7 +329,12 @@ def handle_sh_query(
         _logger.warning("Argument clip=False is not supported, data will be clipped to provided aoi.")
 
     downloaded = download_sentinel_hub(
-        items=search.items(), aoi=aoi, output_dir=output_dir, token=token, stac_collection=stac_collection, clip=True
+        items=search.items(),
+        aoi=aoi,
+        output_dir=output_dir,
+        token=token,
+        stac_collection=stac_collection,
+        clip=True,
     )
 
     new_catalog = prepare_local_stac(

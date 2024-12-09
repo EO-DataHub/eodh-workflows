@@ -14,9 +14,9 @@ from tqdm import tqdm
 
 from src.consts.crs import WGS84
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
-from src.geom_utils.transform import gejson_to_polygon
-from src.local_stac.stac_io import read_local_stac, write_local_stac
+from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
+from src.utils.stac import read_local_stac, write_local_stac
 
 if TYPE_CHECKING:
     from shapely.geometry import Polygon
@@ -54,7 +54,7 @@ def clip_stac_items(input_stac: Path, area: str, output_dir: Path | None = None)
     output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
     output_dir.mkdir(exist_ok=True, parents=True)
 
-    aoi_polygon = gejson_to_polygon(area)
+    aoi_polygon = geojson_to_polygon(area)
 
     local_stac = read_local_stac(input_stac)
 

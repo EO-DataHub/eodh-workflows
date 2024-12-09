@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -15,48 +14,24 @@ from tqdm import tqdm
 from src import consts
 from src.consts.crs import WGS84
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
-from src.data_helpers.get_classes_dicts import get_classes, get_classes_orig_dict
-from src.data_helpers.sh_auth import sh_auth_token
-from src.geom_utils.calculate import calculate_geodesic_area
-from src.geom_utils.transform import gejson_to_polygon
-from src.local_stac.generate import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
-from src.raster_utils.build import build_raster_array
-from src.raster_utils.helpers import get_raster_bounds
-from src.raster_utils.save import save_cog
-from src.raster_utils.thumbnail import generate_thumbnail_with_discrete_classes, image_to_base64
+from src.utils.geom import calculate_geodesic_area, geojson_to_polygon
 from src.utils.logging import get_logger
+from src.utils.raster import (
+    build_raster_array,
+    generate_thumbnail_with_discrete_classes,
+    get_raster_bounds,
+    image_to_base64,
+    save_cog,
+)
+from src.utils.sentinel_hub import sh_auth_token
+from src.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
+from src.workflows.lulc.helpers import DATASOURCE_LOOKUP, DataSource, get_classes, get_classes_orig_dict
 
 if TYPE_CHECKING:
     import xarray
     from pystac import Item
 
 _logger = get_logger(__name__)
-
-
-@dataclass
-class DataSource:
-    name: str
-    catalog: str
-    collection: str
-
-
-DATASOURCE_LOOKUP = {
-    consts.stac.CEDA_ESACCI_LC_LOCAL_NAME: DataSource(
-        name=consts.stac.CEDA_ESACCI_LC_LOCAL_NAME,
-        catalog=consts.stac.CEDA_CATALOG_API_ENDPOINT,
-        collection=consts.stac.CEDA_ESACCI_LC_COLLECTION_NAME,
-    ),
-    consts.stac.SH_CLMS_CORINELC_LOCAL_NAME: DataSource(
-        name=consts.stac.SH_CLMS_CORINELC_LOCAL_NAME,
-        catalog=consts.stac.SH_CATALOG_API_ENDPOINT,
-        collection=consts.stac.SH_CLMS_CORINELC_COLLECTION_NAME,
-    ),
-    consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME: DataSource(
-        name=consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME,
-        catalog=consts.stac.SH_CATALOG_API_ENDPOINT,
-        collection=consts.stac.SH_CLMS_WATER_BODIES_COLLECTION_NAME,
-    ),
-}
 
 
 @click.command(help="Generate LULC change")
@@ -92,7 +67,7 @@ def generate_lulc_change(
     source_ds: DataSource = DATASOURCE_LOOKUP[source]
 
     # Transferring the AOI
-    aoi_polygon = gejson_to_polygon(aoi)
+    aoi_polygon = geojson_to_polygon(aoi)
 
     items = _get_data(source_ds, aoi_polygon, date_start, date_end)
 

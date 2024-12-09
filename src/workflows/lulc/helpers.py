@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
 from src import consts
@@ -7,7 +8,31 @@ from src import consts
 if TYPE_CHECKING:
     from pystac import Item
 
-    from src.workflows.lulc.generate_change import DataSource
+
+@dataclass
+class DataSource:
+    name: str
+    catalog: str
+    collection: str
+
+
+DATASOURCE_LOOKUP = {
+    consts.stac.CEDA_ESACCI_LC_LOCAL_NAME: DataSource(
+        name=consts.stac.CEDA_ESACCI_LC_LOCAL_NAME,
+        catalog=consts.stac.CEDA_CATALOG_API_ENDPOINT,
+        collection=consts.stac.CEDA_ESACCI_LC_COLLECTION_NAME,
+    ),
+    consts.stac.SH_CLMS_CORINELC_LOCAL_NAME: DataSource(
+        name=consts.stac.SH_CLMS_CORINELC_LOCAL_NAME,
+        catalog=consts.stac.SH_CATALOG_API_ENDPOINT,
+        collection=consts.stac.SH_CLMS_CORINELC_COLLECTION_NAME,
+    ),
+    consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME: DataSource(
+        name=consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME,
+        catalog=consts.stac.SH_CATALOG_API_ENDPOINT,
+        collection=consts.stac.SH_CLMS_WATER_BODIES_COLLECTION_NAME,
+    ),
+}
 
 
 def get_classes_orig_dict(source: DataSource, item: Item) -> list[dict[str, int | str]]:

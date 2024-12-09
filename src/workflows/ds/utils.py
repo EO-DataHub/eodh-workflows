@@ -1,21 +1,25 @@
 from __future__ import annotations
 
 import json
+from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable
 
 import dask.bag
 import dask.config
 import geopandas as gpd
 import rasterio
 import requests
+import rioxarray
 from distributed import Client as DistributedClient, LocalCluster
 from rasterio.mask import mask
 from shapely.geometry import mapping, shape
 from tqdm import tqdm
 
 from src import consts
+from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
+from src.utils.raster import save_cog_v2
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -41,6 +45,16 @@ DATASET_TO_COLLECTION_LOOKUP = {
     "esa-lccci-glcm": "land_cover",
     "clms-corine-lc": "byoc-cbdba844-f86d-41dc-95ad-b3f7f12535e9",
     "clms-water-bodies": "byoc-62bf6f6a-c584-48a8-a739-0bc60efee54a",
+}
+
+HTTP_OK = 200
+EVALSCRIPT_LOOKUP = {
+    "clms-corine-lc": consts.sentinel_hub.SH_EVALSCRIPT_CORINELC,
+    "clms-water-bodies": consts.sentinel_hub.SH_EVALSCRIPT_WATERBODIES,
+}
+CLASSES_LOOKUP = {
+    "clms-corine-lc": consts.sentinel_hub.SH_CLASSES_DICT_CORINELC,
+    "clms-water-bodies": consts.sentinel_hub.SH_CLASSES_DICT_WATERBODIES,
 }
 
 
@@ -121,9 +135,11 @@ def download_search_results(
     items: Iterable[Item],
     aoi: dict[str, Any],
     output_dir: Path,
+    asset_rename: dict[str, str] | None = None,
     *,
     clip: bool = False,
 ) -> list[Path]:
+    asset_rename = asset_rename or {}
     results = []  # Initialize a list to collect results
     progress_bar = tqdm(sorted(items, key=lambda x: x.datetime), desc="Processing items")
     for item in progress_bar:
@@ -163,17 +179,140 @@ def download_search_results(
             _ = (
                 dask.bag.from_sequence(list(item_modified["assets"].items()), partition_size=1)
                 .map(handle_single_asset_dask, item_output_dir=item_output_dir, aoi=aoi, clip=clip)
-                .compute_from_item()
+                .compute()
             )
 
         # Update hrefs to point to local files
-        for asset_tuple in item_modified["assets"].items():
-            asset_key, asset = asset_tuple
+        for asset_key in list(item_modified["assets"]):
             asset_filepath = item_output_dir / f"{asset_key}.tif"
-            item_modified["assets"][asset_key]["href"] = asset_filepath.as_posix()
-            if "role" in item_modified["assets"][asset_key]:
-                item_modified["assets"][asset_key]["roles"] = item_modified["assets"][asset_key]["role"]
-                item_modified["assets"][asset_key].pop("role")
+
+            final_asset_key = asset_rename.get(asset_key, asset_key)
+            updated_asset = item_modified["assets"].pop(asset_key)
+            updated_asset["href"] = asset_filepath.as_posix()
+
+            item_modified["assets"][final_asset_key] = updated_asset
+
+            if "role" in item_modified["assets"][final_asset_key]:
+                item_modified["assets"][final_asset_key]["roles"] = item_modified["assets"][final_asset_key]["role"]
+                item_modified["assets"][final_asset_key].pop("role")
+
+        # Save JSON definition of the item
+        item_path = item_output_dir / f"{item.id}.json"
+        with item_path.open("w", encoding="utf-8") as json_file:
+            json.dump(item_modified, json_file, indent=4, ensure_ascii=False)
+        results.append(item_path)
+
+    return results  # Return the complete dict of results
+
+
+def _download_sh_item(
+    item: Item, item_output_dir: Path, aoi: dict[str, Any], token: str, stac_collection: str, *, timeout: int = 20
+) -> Path:
+    process_api_url = consts.sentinel_hub.SH_PROCESS_API
+    aoi_polygon = geojson_to_polygon(json.dumps(aoi))
+    bbox = aoi_polygon.bounds
+
+    payload = {
+        "input": {
+            "bounds": {"bbox": bbox, "properties": {"crs": "http://www.opengis.net/def/crs/EPSG/0/4326"}},
+            "data": [
+                {
+                    "type": DATASET_TO_COLLECTION_LOOKUP[stac_collection],
+                    "dataFilter": {
+                        "timeRange": {
+                            "from": item.datetime.isoformat(),
+                            "to": item.datetime.isoformat(),
+                        }
+                    },
+                }
+            ],
+        },
+        "evalscript": EVALSCRIPT_LOOKUP[stac_collection],
+        "output": {
+            "responses": [
+                {
+                    "identifier": "default",
+                    "format": {"type": "image/tiff", "parameters": {"compression": "LZW", "cog": True}},
+                }
+            ]
+        },
+    }
+
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+    response = requests.post(process_api_url, headers=headers, data=json.dumps(payload), timeout=timeout)
+
+    # Checking the response
+    if response.status_code == HTTP_OK:
+        # Load binary data without saving to disk
+        cog_data = BytesIO(response.content)
+        data_arr = rioxarray.open_rasterio(cog_data, chunks=consts.compute.CHUNK_SIZE)
+
+        if data_arr.rio.nodata is None:
+            data_arr.rio.write_nodata(0, inplace=True)
+
+        return save_cog_v2(arr=data_arr, output_file_path=item_output_dir / "data.tif")
+    error_message = f"Error: {response.status_code}, : {response.text}"
+    raise requests.HTTPError(error_message)
+
+
+def download_sentinel_hub(
+    items: Iterable[Item],
+    aoi: dict[str, Any],
+    output_dir: Path,
+    token: str,
+    stac_collection: str,
+    *,
+    clip: bool = False,
+) -> list[Path]:
+    results = []  # Initialize a list to collect results
+    progress_bar = tqdm(sorted(items, key=lambda x: x.datetime), desc="Downloading items")
+    for item in progress_bar:
+        progress_bar.set_description(f"Working with: {item.id}")
+
+        item_output_dir = output_dir / "source_data" / item.id
+        item_output_dir.mkdir(parents=True, exist_ok=True)
+
+        item_modified = item.to_dict()
+
+        # Adjust geometry and bbox if clipping
+        new_geometry = shape(item.geometry)
+        if clip:
+            # Update geometry and bbox to reflect clipped area
+            new_geometry = new_geometry.intersection(shape(aoi))
+            item_modified["geometry"] = mapping(new_geometry)
+            item_modified["bbox"] = new_geometry.bounds
+
+        # Filter non-raster items
+        for asset_key, asset in item.assets.items():
+            media_type = asset.media_type or Path(asset.href).suffix.replace(".", "")
+            if media_type.lower() not in {
+                "image/tiff; application=geotiff; profile=cloud-optimized",
+                "tif",
+                "tiff",
+                "geotiff",
+                "cog",
+            }:
+                item_modified["assets"].pop(asset_key)
+                continue
+
+        # Download assets in parallel using dask
+        downloaded_path = _download_sh_item(
+            item=item, item_output_dir=item_output_dir, aoi=aoi, token=token, stac_collection=stac_collection
+        )
+
+        # STAC in SentinelHub has no assets
+        item_modified["assets"]["data"] = {
+            "href": downloaded_path.as_posix(),
+            "title": f"Data for {stac_collection}",
+            "roles": ["data"],
+            "classification:classes": CLASSES_LOOKUP[stac_collection],
+        }
+
+        # Adjust other STAC item properties
+        item_modified["properties"]["proj:epsg"] = consts.crs.WGS84
+        item_modified["properties"].pop("proj:bbox", None)
+        item_modified["properties"].pop("proj:geometry", None)
 
         # Save JSON definition of the item
         item_path = item_output_dir / f"{item.id}.json"

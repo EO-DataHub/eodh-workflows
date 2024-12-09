@@ -10,12 +10,11 @@ import rioxarray
 from tqdm import tqdm
 
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
-from src.data_helpers.get_classes_dicts import get_classes
-from src.geom_utils.calculate import calculate_geodesic_area
-from src.local_stac.stac_io import read_local_stac, write_local_stac
-from src.raster_utils.helpers import get_raster_polygon
-from src.raster_utils.save import save_cog_v2
+from src.utils.geom import calculate_geodesic_area
 from src.utils.logging import get_logger
+from src.utils.raster import get_raster_polygon, save_cog_v2
+from src.utils.stac import read_local_stac, write_local_stac
+from src.workflows.lulc.helpers import get_classes
 
 if TYPE_CHECKING:
     import xarray
@@ -97,7 +96,7 @@ def generate_lulc_change(input_stac: Path, output_dir: Path | None = None) -> No
     progress_bar.close()
 
     # Save local STAC
-    write_local_stac(local_stac, output_dir, "EOPro LULC Change Generated", "EOPro LULC Change Generated")
+    write_local_stac(local_stac, output_dir, "EOPro LULC Change", "EOPro LULC Change Generated")
 
 
 def _get_m2_for_classes(percentage_dict: dict[str, float], full_area_m2: float) -> dict[str, float]:
