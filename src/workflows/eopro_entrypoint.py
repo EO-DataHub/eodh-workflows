@@ -25,7 +25,7 @@ def stac() -> None:
 
 @cli.group()
 def classification() -> None:
-    """Discreta Datasets (e.g. Land Use / Land Cover) related operations."""
+    """Discrete Datasets (e.g. Land Use / Land Cover) related operations."""
 
 
 ds.add_command(query, name="query")
