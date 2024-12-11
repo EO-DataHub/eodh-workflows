@@ -88,19 +88,14 @@ def get_raster_polygon(xarr: xr.DataArray) -> Polygon:
     return polygons[0] if len(polygons) == 1 else MultiPolygon(polygons).union
 
 
-def save_cog(arr: xr.DataArray, asset_id: str, output_dir: Path, epsg: int = WGS84) -> Path:
+def save_cog(arr: xr.DataArray, asset_id: str, output_dir: Path, epsg: int | None = None) -> Path:
     _logger.info("Saving '%s' COG to %s", asset_id, output_dir.as_posix())
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    if arr.rio.crs is None:
-        _logger.warning("CRS on `rio` accessor for asset '%s' was not set. Will assume %s", asset_id, epsg)
-        arr = arr.rio.write_crs(f"EPSG:{epsg}")
-
-    if arr.rio.crs.to_epsg() != epsg:
+    if epsg is not None:
         arr = arr.rio.reproject(f"EPSG:{epsg}")
 
-    arr = arr.rio.write_crs(f"EPSG:{epsg}")
-    arr.rio.to_raster(output_dir / f"{asset_id}.tif", driver="COG", windowed=True)
+    arr.rio.to_raster(output_dir / f"{asset_id}.tif", driver="COG")
 
     return output_dir / f"{asset_id}.tif"
 

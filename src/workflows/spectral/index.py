@@ -7,7 +7,6 @@ import click
 import numpy as np
 from tqdm import tqdm
 
-from src.consts.crs import WGS84
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
 from src.utils.logging import get_logger
 from src.utils.raster import save_cog
@@ -60,19 +59,18 @@ def spectral_index(data_dir: Path, index: str, output_dir: Path | None = None) -
     items = []
     for item in tqdm(list(local_stac.get_items(recursive=True)), desc="Processing STAC items"):
         first_asset = next(iter(item.assets.values()))
-        asset_dir = Path(first_asset.href).resolve().parent
+        asset_dir = Path(first_asset.href).parent
         index_raster = index_calculator.compute(item=item)
         fp = save_cog(
             arr=index_raster,
             asset_id=index,
             output_dir=output_dir / asset_dir.relative_to(data_dir),
-            epsg=WGS84,
         )
         vmin, vmax, intervals = index_calculator.typical_range
         js_cmap, cmap_reversed = index_calculator.js_colormap
         assets = {
             "ndvi": prepare_stac_asset(
-                file_path=fp,
+                file_path=fp.resolve().absolute(),
                 title=index_calculator.full_name,
                 asset_extra_fields={
                     "colormap": {

@@ -281,6 +281,22 @@ spectral-index-s2-doc:
 
 # CWL workflow execution commands
 
+.PHONY: reproject-s2-ndvi ## Works after spectral-index-s2-ndvi
+reproject-s2-ndvi:
+	eopro spectral index \
+	--data_dir "./data/processed/eopro/spectral-index/s2-ndvi" \
+	--epsg=EPSG:4326 \
+	--output_dir "./data/processed/eopro/raster-reproject/s2-ndvi"
+
+# CWL workflow execution commands
+
+.PHONY: ndvi-pipeline
+ndvi-pipeline:
+	make query-s2
+	make clip-s2
+	make spectral-index-s2-ndvi
+	make reproject-s2-ndvi
+
 .PHONY: cwl-ndvi  ## Runs Raster Calculator
 cwl-raster-calculator:
 	@cwltool ./cwl_files/local/raster-calculate-app.cwl\#raster-calculate \

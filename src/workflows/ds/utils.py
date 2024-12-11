@@ -126,10 +126,9 @@ def download_and_clip_asset(asset: dict[str, Any], output_path: Path, aoi: dict[
         dest.write(data)
 
     asset["href"] = output_path.as_posix()
-
-    if "proj:shape" in asset or "proj:transform" in asset:
-        asset["proj:shape"] = shape
-        asset["proj:transform"] = out_transform
+    asset["proj:shape"] = data.squeeze().shape
+    asset["proj:transform"] = out_transform
+    asset["proj:epsg"] = src.crs.to_epsg()
 
     return asset
 
