@@ -13,7 +13,7 @@ from xrspatial.multispectral import evi, ndvi, savi
 from src import consts
 from src.consts.compute import EPS
 from src.consts.crs import WGS84
-from src.consts.stac import SENTINEL_2_L2A_COLLECTION_NAME
+from src.consts.stac import LOCAL_COLLECTION_NAME, SENTINEL_2_L2A_COLLECTION_NAME
 from src.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ PLANETARY_COMPUTER_ASSET_LOOKUP = {v: k for k, v in EARTH_SEARCH_AWS_ASSET_LOOKU
 
 
 def unify_asset_identifiers(assets_to_use: list[str], collection: str) -> list[str]:
-    if collection == "sentinel-2-l2a":
+    if collection in {SENTINEL_2_L2A_COLLECTION_NAME, LOCAL_COLLECTION_NAME}:
         return assets_to_use
     return [PLANETARY_COMPUTER_ASSET_LOOKUP[a] for a in assets_to_use]
 
@@ -449,7 +449,10 @@ class NDVI(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["red", "nir"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["red", "nir"],
+            LOCAL_COLLECTION_NAME: ["red", "nir"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -489,7 +492,10 @@ class NDWI(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["green", "nir"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["green", "nir"],
+            LOCAL_COLLECTION_NAME: ["green", "nir"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -529,7 +535,10 @@ class SAVI(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["red", "nir"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["red", "nir"],
+            LOCAL_COLLECTION_NAME: ["red", "nir"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -569,7 +578,10 @@ class EVI(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["blue", "red", "nir"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["blue", "red", "nir"],
+            LOCAL_COLLECTION_NAME: ["blue", "red", "nir"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -610,7 +622,10 @@ class CyaCells(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["blue", "green", "red", "scl"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["blue", "green", "red", "scl"],
+            LOCAL_COLLECTION_NAME: ["blue", "green", "red", "scl"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -655,7 +670,10 @@ class CyaMg(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["red", "rededge1", "scl"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["red", "rededge1", "scl"],
+            LOCAL_COLLECTION_NAME: ["red", "rededge1", "scl"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -699,7 +717,10 @@ class ChlACoastal(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["red", "rededge1", "scl"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["red", "rededge1", "scl"],
+            LOCAL_COLLECTION_NAME: ["red", "rededge1", "scl"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -743,7 +764,10 @@ class ChlALow(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["blue", "green", "scl"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["blue", "green", "scl"],
+            LOCAL_COLLECTION_NAME: ["blue", "green", "scl"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -787,7 +811,10 @@ class ChlAHigh(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["red", "rededge1", "scl"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["red", "rededge1", "scl"],
+            LOCAL_COLLECTION_NAME: ["red", "rededge1", "scl"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -831,7 +858,10 @@ class Turbidity(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["blue", "rededge1", "scl"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["blue", "rededge1", "scl"],
+            LOCAL_COLLECTION_NAME: ["blue", "rededge1", "scl"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -875,7 +905,10 @@ class DOC(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["green", "red", "scl"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["green", "red", "scl"],
+            LOCAL_COLLECTION_NAME: ["green", "red", "scl"],
+        }
 
     @staticmethod
     def calculate_index(
@@ -919,7 +952,10 @@ class CDOM(IndexCalculator):
 
     @property
     def collection_assets_to_use(self) -> dict[str, list[str]]:
-        return {SENTINEL_2_L2A_COLLECTION_NAME: ["blue", "red", "scl"]}
+        return {
+            SENTINEL_2_L2A_COLLECTION_NAME: ["blue", "red", "scl"],
+            LOCAL_COLLECTION_NAME: ["blue", "red", "scl"],
+        }
 
     @staticmethod
     def calculate_index(

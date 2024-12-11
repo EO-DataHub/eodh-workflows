@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Any
 
 import pystac
 from pystac.extensions.projection import ProjectionExtension
+from shapely import Polygon
 from shapely.geometry import mapping
+from shapely.geometry.geo import shape
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    from shapely import Polygon
 
 
 def read_local_stac(input_stac_path: Path) -> pystac.Catalog:
@@ -81,7 +81,7 @@ def prepare_thumbnail_asset(thumbnail_path: Path) -> pystac.Asset:
 
 def prepare_stac_item(
     id_item: str,
-    geometry: Polygon,
+    geometry: Polygon | dict[str, Any],
     epsg: int,
     transform: list[float],
     datetime: str,
@@ -90,8 +90,8 @@ def prepare_stac_item(
 ) -> pystac.Item:
     item = pystac.Item(
         id=id_item,
-        geometry=mapping(geometry),
-        bbox=geometry.bounds,
+        geometry=mapping(geometry) if isinstance(geometry, Polygon) else geometry,
+        bbox=geometry.bounds if isinstance(geometry, Polygon) else shape(geometry).bounds,
         datetime=datetime,
         properties=additional_prop,
     )
