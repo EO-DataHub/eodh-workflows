@@ -100,14 +100,7 @@ def clip_stac_items(data_dir: Path, aoi: str, output_dir: Path | None = None) ->
                         src_transform: Affine = src.transform
                         shape = src.shape
                     asset.extra_fields["proj:shape"] = shape
-                    asset.extra_fields["proj:transform"] = (
-                        src_transform.a,
-                        src_transform.b,
-                        src_transform.c,
-                        src_transform.d,
-                        src_transform.e,
-                        src_transform.f,
-                    )
+                    asset.extra_fields["proj:transform"] = list(src_transform)
 
                 # Increment the progress bar for each processed asset
                 progress_bar.update(1)

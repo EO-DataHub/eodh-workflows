@@ -265,6 +265,22 @@ summarize-classes-wb:
 
 # CWL workflow execution commands
 
+.PHONY: spectral-index-s2-ndvi ## Works after clip-s2
+spectral-index-s2-ndvi:
+	eopro spectral index \
+	--data_dir "./data/processed/eopro/raster-clip/s2" \
+	--index=ndvi \
+	--output_dir "./data/processed/eopro/spectral-index/s2-ndvi"
+
+.PHONY: spectral-index-s2-doc ## Works after clip-s2
+spectral-index-s2-doc:
+	eopro spectral index \
+	--data_dir "./data/processed/eopro/raster-clip/s2" \
+	--index=doc \
+	--output_dir "./data/processed/eopro/spectral-index/s2-doc"
+
+# CWL workflow execution commands
+
 .PHONY: cwl-ndvi  ## Runs Raster Calculator
 cwl-raster-calculator:
 	@cwltool ./cwl_files/local/raster-calculate-app.cwl\#raster-calculate \
