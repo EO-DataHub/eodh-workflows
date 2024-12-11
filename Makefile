@@ -207,8 +207,8 @@ query-s2:
 .PHONY: clip-s2 ## Works after query-s2
 clip-s2:
 	eopro raster clip \
-	--input_stac "./data/processed/eopro/ds-query/s2" \
-	--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.65,4.35],[71.8,4.35],[71.8,4.5],[71.65,4.5],[71.65,4.35]]]}" \
+	--data_dir "./data/processed/eopro/ds-query/s2" \
+	--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.65,4.35],[71.8,4.35],[71.8,4.5],[71.65,4.5],[71.65,4.35]]]}" \
 	--output_dir "./data/processed/eopro/raster-clip/s2"
 
 .PHONY: query-globallc ## Query ESA Global LC
@@ -223,14 +223,14 @@ query-globallc:
 .PHONY: clip-globallc ## Works after query-globallc
 clip-globallc:
 	eopro raster clip \
- 	--input_stac "./data/processed/eopro/ds-query/esa-lccci-glcm" \
-	--area "{\"type\": \"Polygon\",\"coordinates\": [[[15.0, 50.9],[15.03, 50.9],[15.03, 50.95],[15.0, 50.95],[15.0, 50.9]]]}" \
+ 	--data_dir "./data/processed/eopro/ds-query/esa-lccci-glcm" \
+	--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[15.0, 50.9],[15.03, 50.9],[15.03, 50.95],[15.0, 50.95],[15.0, 50.9]]]}" \
 	--output_dir "./data/processed/eopro/raster-clip/esa-lccci-glcm"
 
-.PHONY: lulc-change-globallc ## Works after query-globallc or clip-globallc
-lulc-change-globallc:
+.PHONY: summarize-classes-globallc ## Works after query-globallc or clip-globallc
+summarize-classes-globallc:
 	eopro classification summarize \
-	--input_stac "./data/processed/eopro/raster-clip/esa-lccci-glcm" \
+	--data_dir "./data/processed/eopro/raster-clip/esa-lccci-glcm" \
 	--output_dir "./data/processed/eopro/classification-summarize/esa-lccci-glcm"
 
 .PHONY: query-corine ## Query CORINE Land Cover
@@ -242,10 +242,10 @@ query-corine:
 	--date_end 2018-12-31T23:59:59Z \
 	--output_dir "./data/processed/eopro/ds-query/corine"
 
-.PHONY: lulc-change-corine ## Works after query-corine
-lulc-change-corine:
+.PHONY: summarize-classes-corine ## Works after query-corine
+summarize-classes-corine:
 	eopro classification summarize \
-	--input_stac "./data/processed/eopro/ds-query/corine" \
+	--data_dir "./data/processed/eopro/ds-query/corine" \
 	--output_dir "./data/processed/eopro/classification-summarize/corine"
 
 .PHONY: query-wb ## Query Water Bodies
@@ -257,10 +257,10 @@ query-wb:
 	--date_end 2024-03-31T23:59:59Z \
 	--output_dir "./data/processed/eopro/ds-query/water-bodies"
 
-.PHONY: lulc-change-wb ## Works after query-wb
-lulc-change-wb:
+.PHONY: summarize-classes-wb ## Works after query-wb
+summarize-classes-wb:
 	eopro classification summarize \
-	--input_stac "./data/processed/eopro/ds-query/water-bodies" \
+	--data_dir "./data/processed/eopro/ds-query/water-bodies" \
 	--output_dir "./data/processed/eopro/classification-summarize/water-bodies"
 
 # CWL workflow execution commands
@@ -278,7 +278,7 @@ cwl-raster-calculator:
 
 .PHONY: cwl-corinelc  ## Runs LULC Change with CORINE
 cwl-corinelc:
-	@cwltool ./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
+	@cwltool ./cwl_files/local/summarize-classes-app.cwl\#land-cover-change \
 		--source clms-corinelc \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 		--date_start 2006-01-01T00:00:00Z \

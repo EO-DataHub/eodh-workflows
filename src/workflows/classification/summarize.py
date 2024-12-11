@@ -24,7 +24,7 @@ _logger = get_logger(__name__)
 
 @click.command(help="Generate LULC change")
 @click.option(
-    "--input_stac",
+    "--data_dir",
     required=True,
     type=click.Path(path_type=Path, resolve_path=True),  # type: ignore[type-var]
     help="Path to the local STAC folder",
@@ -35,9 +35,9 @@ _logger = get_logger(__name__)
     type=click.Path(path_type=Path, resolve_path=True),  # type: ignore[type-var]
     help="Path to the output directory - will create new dir in CWD if not provided",
 )
-def generate_lulc_change(input_stac: Path, output_dir: Path | None = None) -> None:
+def summarize_classes(data_dir: Path, output_dir: Path | None = None) -> None:
     initial_arguments = {
-        "input_stac": input_stac.as_posix(),
+        "data_dir": data_dir.as_posix(),
         "output_dir": output_dir.as_posix() if output_dir is not None else None,
     }
     _logger.info(
@@ -47,7 +47,7 @@ def generate_lulc_change(input_stac: Path, output_dir: Path | None = None) -> No
     output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
     output_dir.mkdir(exist_ok=True, parents=True)
 
-    local_stac = read_local_stac(input_stac)
+    local_stac = read_local_stac(data_dir)
 
     # Calculate the total number of assets with the role "data"
     total_data_assets = sum(
@@ -80,7 +80,7 @@ def generate_lulc_change(input_stac: Path, output_dir: Path | None = None) -> No
 
                 # Save COG with lulc change values in metadata
                 raster_path = save_cog_v2(
-                    arr=raster_arr, output_file_path=output_dir / Path(asset.href).relative_to(input_stac)
+                    arr=raster_arr, output_file_path=output_dir / Path(asset.href).relative_to(data_dir)
                 )
                 asset.href = raster_path.as_posix()
                 if "size" in asset.extra_fields:
