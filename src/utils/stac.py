@@ -33,7 +33,7 @@ def generate_stac(
     title: str = "Catalog",
     description: str = "Outputs from the job processed on ADES",
 ) -> None:
-    catalog = pystac.Catalog(id="catalog", title=title, description=description)
+    catalog = pystac.Catalog(id="catalog", title=title, description=description, href=output_dir.as_posix())
 
     # Adding a collection is not supported by ADES
     # https://github.com/EO-DataHub/platform-bugs/issues/31
@@ -42,6 +42,7 @@ def generate_stac(
         catalog.add_item(item)
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    catalog.make_all_asset_hrefs_relative()
     catalog.normalize_and_save(output_dir.as_posix(), catalog_type=pystac.CatalogType.SELF_CONTAINED)
 
 
@@ -60,7 +61,7 @@ def prepare_stac_asset(
     return pystac.Asset(
         title=title,
         description=description,
-        href=f"../{file_path.name}",
+        href=file_path.absolute().as_posix(),
         media_type=pystac.MediaType.COG,
         extra_fields=asset_extra_fields,
         roles=["data"],

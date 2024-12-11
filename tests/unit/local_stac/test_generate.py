@@ -81,7 +81,7 @@ def test_prepare_stac_item(
     # Check asset
     assert "data" in item.assets
     asset = item.assets["data"]
-    assert asset.href == f"../{example_cog_path.name}"
+    assert asset.href == example_cog_path.as_posix()
     assert asset.media_type == pystac.MediaType.COG
     assert asset.extra_fields == asset_extra_fields
 
@@ -128,7 +128,9 @@ def test_generate_stac(mock_catalog_class: MagicMock, example_items: list[pystac
     )
 
     # Check if Catalog was created with correct parameters
-    mock_catalog_class.assert_called_once_with(id="catalog", title=title, description=description)
+    mock_catalog_class.assert_called_once_with(
+        id="catalog", title=title, description=description, href=tmp_path.as_posix()
+    )
 
     # Check if items were added to the collection
     for item in example_items:

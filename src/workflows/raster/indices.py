@@ -12,7 +12,6 @@ from xrspatial.multispectral import evi, ndvi, savi
 
 from src import consts
 from src.consts.compute import EPS
-from src.consts.crs import WGS84
 from src.consts.stac import LOCAL_COLLECTION_NAME, SENTINEL_2_L2A_COLLECTION_NAME
 from src.utils.logging import get_logger
 
@@ -352,7 +351,6 @@ def prepare_data_array(
                 assets=assets,
                 chunksize=consts.compute.CHUNK_SIZE,
                 bounds_latlon=bbox,
-                epsg=WGS84,
             )
         )
         .assign_coords({"band": mapped_asset_ids})  # use common names
@@ -462,7 +460,7 @@ class NDVI(IndexCalculator):
     ) -> xarray.DataArray:
         nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
         red = rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset)
-        return ndvi(nir_agg=nir, red_agg=red).rio.write_crs(WGS84)
+        return ndvi(nir_agg=nir, red_agg=red).rio.write_crs(raster_arr.rio.crs)
 
 
 class NDWI(IndexCalculator):
@@ -505,7 +503,7 @@ class NDWI(IndexCalculator):
     ) -> xarray.DataArray:
         nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
         green = rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset)
-        return ndvi(nir_agg=green, red_agg=nir, name="ndwi").rio.write_crs(WGS84)
+        return ndvi(nir_agg=green, red_agg=nir, name="ndwi").rio.write_crs(raster_arr.rio.crs)
 
 
 class SAVI(IndexCalculator):
@@ -548,7 +546,7 @@ class SAVI(IndexCalculator):
     ) -> xarray.DataArray:
         nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
         red = rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset)
-        return savi(nir_agg=nir, red_agg=red).rio.write_crs(WGS84)
+        return savi(nir_agg=nir, red_agg=red).rio.write_crs(raster_arr.rio.crs)
 
 
 class EVI(IndexCalculator):
@@ -592,7 +590,7 @@ class EVI(IndexCalculator):
         nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
         red = rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset)
         blue = rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset)
-        return evi(nir_agg=nir, red_agg=red, blue_agg=blue).rio.write_crs(WGS84)
+        return evi(nir_agg=nir, red_agg=red, blue_agg=blue).rio.write_crs(raster_arr.rio.crs)
 
 
 class CyaCells(IndexCalculator):
