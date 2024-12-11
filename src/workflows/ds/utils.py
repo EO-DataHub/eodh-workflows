@@ -64,23 +64,16 @@ def handle_single_asset_dask(
     aoi: dict[str, Any],
     *,
     clip: bool = False,
-) -> tuple[str, Path]:
+) -> tuple[str, dict[str, Any]]:
     asset_key, asset = asset_id_data_tuple
-    asset_url = asset["href"]
-
     asset_filename = item_output_dir / f"{asset_key}.tif"
-
-    if clip:
-        download_and_clip_asset(asset_url, asset_filename, aoi)
-    else:
-        download_asset(asset_url, asset_filename)
-
-    return asset_key, asset_filename
+    asset = download_and_clip_asset(asset, asset_filename, aoi) if clip else download_asset(asset, asset_filename)
+    return asset_key, asset
 
 
-def download_asset(url: str, output_path: Path, timeout: int = 60) -> None:
+def download_asset(asset: dict[str, Any], output_path: Path, timeout: int = 60) -> dict[str, Any]:
     """Download a single asset from a URL."""
-    response = requests.get(url, stream=True, timeout=timeout)
+    response = requests.get(asset["href"], stream=True, timeout=timeout)
     response.raise_for_status()  # Raise an error for bad status codes
     total_size = int(response.headers.get("content-length", 0))
     with output_path.open("wb") as f, tqdm(
@@ -94,6 +87,8 @@ def download_asset(url: str, output_path: Path, timeout: int = 60) -> None:
             if chunk:
                 f.write(chunk)
                 progress.update(len(chunk))
+    asset["href"] = output_path.as_posix()
+    return asset
 
 
 def get_features_geometry(gdf: gpd.GeoDataFrame) -> list[dict[str, Any]]:
@@ -101,16 +96,16 @@ def get_features_geometry(gdf: gpd.GeoDataFrame) -> list[dict[str, Any]]:
     return [json.loads(gdf.to_json())["features"][0]["geometry"]]
 
 
-def download_and_clip_asset(url: str, output_path: Path, aoi: dict[str, Any]) -> None:
+def download_and_clip_asset(asset: dict[str, Any], output_path: Path, aoi: dict[str, Any]) -> dict[str, Any]:
     """Download and clip a GeoTIFF/COG asset to the AOI without downloading the full asset."""
-    _logger.info("Downloading and clipping asset: %s", url)
+    _logger.info("Downloading and clipping asset: %s", asset["href"])
     # Load AOI geometry
     aoi_geometry = shape(aoi)
     geo = gpd.GeoDataFrame({"geometry": aoi_geometry}, index=[0], crs="EPSG:4326")
 
     # Use Rasterio to open the remote GeoTIFF
     src: rasterio.io.DatasetReader
-    with rasterio.open(url) as src:
+    with rasterio.open(asset["href"]) as src:
         geo = geo.to_crs(src.crs)
         aoi_geom = get_features_geometry(geo)
         data, out_transform = mask(dataset=src, shapes=aoi_geom, all_touched=True, crop=True)
@@ -129,6 +124,14 @@ def download_and_clip_asset(url: str, output_path: Path, aoi: dict[str, Any]) ->
     dest: rasterio.io.DatasetWriter
     with rasterio.open(output_path, "w", **out_meta) as dest:
         dest.write(data)
+
+    asset["href"] = output_path.as_posix()
+
+    if "proj:shape" in asset or "proj:transform" in asset:
+        asset["proj:shape"] = shape
+        asset["proj:transform"] = out_transform
+
+    return asset
 
 
 def download_search_results(
@@ -176,30 +179,20 @@ def download_search_results(
         with LocalCluster(n_workers=N_WORKERS, threads_per_worker=THREADS_PER_WORKER) as cluster, DistributedClient(
             cluster
         ):
-            _ = (
+            assets_records: list[tuple[str, dict[str, Any]]] = (
                 dask.bag.from_sequence(list(item_modified["assets"].items()), partition_size=1)
                 .map(handle_single_asset_dask, item_output_dir=item_output_dir, aoi=aoi, clip=clip)
                 .compute()
             )
 
-        # Update hrefs to point to local files
-        for asset_key in list(item_modified["assets"]):
-            asset_filepath = item_output_dir / f"{asset_key}.tif"
-
-            final_asset_key = asset_rename.get(asset_key, asset_key)
-            updated_asset = item_modified["assets"].pop(asset_key)
-            updated_asset["href"] = asset_filepath.as_posix()
-
-            item_modified["assets"][final_asset_key] = updated_asset
-
-            if "role" in item_modified["assets"][final_asset_key]:
-                item_modified["assets"][final_asset_key]["roles"] = item_modified["assets"][final_asset_key]["role"]
-                item_modified["assets"][final_asset_key].pop("role")
+        # Replace assets
+        for asset_key, asset in assets_records:
+            item_modified["assets"].pop(asset_key)
+            item_modified["assets"][asset_rename.get(asset_key, asset_key)] = asset
 
         # Save JSON definition of the item
         item_path = item_output_dir / f"{item.id}.json"
-        with item_path.open("w", encoding="utf-8") as json_file:
-            json.dump(item_modified, json_file, indent=4, ensure_ascii=False)
+        item_path.write_text(json.dumps(item_modified, indent=4), encoding="utf-8")
         results.append(item_path)
 
     return results  # Return the complete dict of results

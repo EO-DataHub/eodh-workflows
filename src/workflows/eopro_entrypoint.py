@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import click
 
+from src.workflows.classification.summarize import summarize_classes
 from src.workflows.ds.query import query
-from src.workflows.lulc.generate_change_v2 import generate_lulc_change
 from src.workflows.raster.clip_v2 import clip_stac_items
 from src.workflows.stac.join import join
 
@@ -36,7 +36,7 @@ def classification() -> None:
 ds.add_command(query, name="query")
 stac.add_command(join, name="join")
 raster.add_command(clip_stac_items, name="clip")
-classification.add_command(generate_lulc_change, name="summarize")
+classification.add_command(summarize_classes, name="summarize")
 
 
 if __name__ == "__main__":
