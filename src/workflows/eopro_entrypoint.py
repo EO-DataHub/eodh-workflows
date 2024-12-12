@@ -6,6 +6,7 @@ from src.workflows.classification.summarize import summarize_classes
 from src.workflows.ds.query import query
 from src.workflows.raster.clip_v2 import clip_stac_items
 from src.workflows.raster.reproject import reproject_stac_items
+from src.workflows.raster.thumbnail import generate_thumbnail_for_stac_items
 from src.workflows.spectral.index import spectral_index
 from src.workflows.stac.join import join
 
@@ -45,6 +46,7 @@ stac.add_command(join, name="join")
 spectral.add_command(spectral_index, name="index")
 raster.add_command(clip_stac_items, name="clip")
 raster.add_command(reproject_stac_items, name="reproject")
+raster.add_command(generate_thumbnail_for_stac_items, name="thumbnail")
 classification.add_command(summarize_classes, name="summarize")
 
 

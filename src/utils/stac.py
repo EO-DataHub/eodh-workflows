@@ -21,6 +21,7 @@ def read_local_stac(input_stac_path: Path) -> pystac.Catalog:
 
 
 def write_local_stac(stac: pystac.Catalog, output_stac_path: Path, title: str, description: str) -> None:
+    stac.set_self_href(output_stac_path.as_posix())
     stac.title = title
     stac.description = description
     stac.make_all_asset_hrefs_relative()
@@ -71,7 +72,7 @@ def prepare_stac_asset(
 def prepare_thumbnail_asset(thumbnail_path: Path) -> pystac.Asset:
     return pystac.Asset(
         title="Thumbnail",
-        href=f"../{thumbnail_path.name}",
+        href=thumbnail_path.absolute().as_posix(),
         media_type=pystac.MediaType.PNG,
         extra_fields={
             "size": thumbnail_path.stat().st_size,

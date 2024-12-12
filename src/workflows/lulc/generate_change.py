@@ -96,16 +96,16 @@ def generate_lulc_change(
 
         # Save COG with lulc change values in metadata
         raster_path = save_cog(arr=raster_arr, asset_id=item.id, epsg=WGS84, output_dir=output_dir)
-        thump_fp = generate_thumbnail_with_discrete_classes(
+        thumb_fp = output_dir / f"{item.id}.png"
+        generate_thumbnail_with_discrete_classes(
             raster_arr,
-            raster_path=raster_path,
+            out_fp=output_dir / f"{item.id}.png",
             classes_list=classes_orig_dict,
-            output_dir=output_dir,
         )
-        thumb_b64 = image_to_base64(thump_fp)
+        thumb_b64 = image_to_base64(thumb_fp)
 
         assets = {
-            "thumbnail": prepare_thumbnail_asset(thump_fp),
+            "thumbnail": prepare_thumbnail_asset(thumb_fp),
             "data": prepare_stac_asset(
                 title=DATASOURCE_LOOKUP[source].name,
                 file_path=raster_path,

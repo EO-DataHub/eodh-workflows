@@ -283,7 +283,7 @@ spectral-index-s2-doc:
 
 .PHONY: reproject-s2-ndvi ## Works after spectral-index-s2-ndvi
 reproject-s2-ndvi:
-	eopro spectral index \
+	eopro raster reproject \
 	--data_dir "./data/processed/eopro/spectral-index/s2-ndvi" \
 	--epsg=EPSG:4326 \
 	--output_dir "./data/processed/eopro/raster-reproject/s2-ndvi"
