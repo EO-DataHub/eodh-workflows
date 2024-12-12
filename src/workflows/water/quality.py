@@ -139,17 +139,17 @@ def water_quality(  # noqa: PLR0914, RUF100
 
             if index_calculator.name == "doc":  # Use DOC as item's thumbnail
                 mpl_cmap, _ = index_calculator.mpl_colormap
-                thump_fp = generate_thumbnail_with_continuous_colormap(
+                thumb_fp = output_dir / f"{item.id}.png"
+                generate_thumbnail_with_continuous_colormap(
                     data=index_raster,
-                    raster_path=raster_path,
-                    output_dir=output_dir,
+                    out_fp=thumb_fp,
                     colormap=mpl_cmap,
                     max_val=vmax,
                     min_val=vmin,
                 )
-                thumb_b64 = image_to_base64(thump_fp)
+                thumb_b64 = image_to_base64(thumb_fp)
                 out_item.properties["thumbnail_b64"] = thumb_b64
-                out_item.add_asset(key="thumbnail", asset=prepare_thumbnail_asset(thumbnail_path=thump_fp))
+                out_item.add_asset(key="thumbnail", asset=prepare_thumbnail_asset(thumbnail_path=thumb_fp))
 
             data_asset = prepare_stac_asset(
                 title=index_calculator.full_name,

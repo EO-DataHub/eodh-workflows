@@ -124,18 +124,18 @@ def calculate(
         vmin, vmax, intervals = index_calculator.typical_range
         mpl_cmap, _ = index_calculator.mpl_colormap
         js_cmap, cmap_reversed = index_calculator.js_colormap
-        thump_fp = generate_thumbnail_with_continuous_colormap(
+        thumb_fp = output_dir / f"{item.id}.png"
+        generate_thumbnail_with_continuous_colormap(
             index_raster,
-            raster_path=raster_path,
-            output_dir=output_dir,
+            out_fp=thumb_fp,
             colormap=mpl_cmap,
             max_val=vmax,
             min_val=vmin,
         )
-        thumb_b64 = image_to_base64(thump_fp)
+        thumb_b64 = image_to_base64(thumb_fp)
 
         assets = {
-            "thumbnail": prepare_thumbnail_asset(thumbnail_path=thump_fp),
+            "thumbnail": prepare_thumbnail_asset(thumbnail_path=thumb_fp),
             "data": prepare_stac_asset(
                 file_path=raster_path,
                 title=index_calculator.full_name,
@@ -147,6 +147,7 @@ def calculate(
                         "max": vmax,
                         "steps": intervals,
                         "units": index_calculator.units,
+                        "mpl_equivalent_cmap": mpl_cmap,
                     },
                     "statistics": {
                         "minimum": index_raster.min().item(),

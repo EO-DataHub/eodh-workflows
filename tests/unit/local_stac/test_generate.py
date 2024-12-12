@@ -87,7 +87,7 @@ def test_prepare_stac_item(
 
     assert "thumbnail" in item.assets
     asset = item.assets["thumbnail"]
-    assert asset.href == f"../{example_thumbnail_fp.name}"
+    assert asset.href == example_thumbnail_fp.as_posix()
     assert asset.media_type == pystac.MediaType.PNG
     assert asset.extra_fields == {
         "size": example_thumbnail_fp.stat().st_size,

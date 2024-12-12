@@ -15,6 +15,7 @@ from shapely import MultiPolygon, Polygon
 from shapely.geometry import box, shape
 
 from src import consts
+from src.consts.compute import EPS
 from src.consts.crs import PSEUDO_MERCATOR, WGS84
 from src.utils.logging import get_logger
 from src.utils.sentinel_hub import sh_auth_token, sh_get_data
@@ -118,12 +119,13 @@ def _create_color_mapping(classes_list: list[dict[str, int | str]]) -> dict[int,
 
 def generate_thumbnail_with_discrete_classes(
     data: xr.DataArray,
-    raster_path: Path,
-    output_dir: Path,
+    out_fp: Path,
     classes_list: list[dict[str, int | str]],
     thumbnail_size: int = 64,
     epsg: int = PSEUDO_MERCATOR,
-) -> Path:
+) -> None:
+    out_fp.parent.mkdir(parents=True, exist_ok=True)
+
     colors_dict = _create_color_mapping(classes_list=classes_list)
 
     # Assume the first band contains the land use values
@@ -162,21 +164,20 @@ def generate_thumbnail_with_discrete_classes(
     thumbnail = Image.fromarray(rgba_image, mode="RGBA")
 
     # Save the thumbnail to a PNG file
-    output_png_path = output_dir / f"{raster_path.stem}.png"
-    thumbnail.save(output_png_path, "PNG")
-    return output_png_path
+    thumbnail.save(out_fp, "PNG")
 
 
 def generate_thumbnail_with_continuous_colormap(
     data: xr.DataArray,
-    raster_path: Path,
+    out_fp: Path,
     colormap: str,
-    output_dir: Path,
     thumbnail_size: int = 64,
     min_val: float = -1.0,
     max_val: float = 1.0,
     epsg: int = PSEUDO_MERCATOR,
-) -> Path:
+) -> None:
+    out_fp.parent.mkdir(parents=True, exist_ok=True)
+
     _logger.info("Generating thumbnail with continuous colormap")
     # Assume the first band contains the data
     band_data = data[0] if data.ndim != EXPECTED_NDIM else data
@@ -214,9 +215,45 @@ def generate_thumbnail_with_continuous_colormap(
     thumbnail = Image.fromarray(rgba_image, mode="RGBA")
 
     # Save the thumbnail to a PNG file
-    output_png_path = output_dir / f"{raster_path.stem}.png"
-    thumbnail.save(output_png_path, "PNG")
-    return output_png_path
+    thumbnail.save(out_fp, "PNG")
+
+
+def generate_thumbnail_as_grayscale_image(
+    data: xr.DataArray,
+    out_fp: Path,
+    thumbnail_size: int = 64,
+    epsg: int = PSEUDO_MERCATOR,
+) -> None:
+    out_fp.parent.mkdir(parents=True, exist_ok=True)
+
+    # Reproject to the specified EPSG
+    data_reprojected = data.rio.reproject(f"EPSG:{epsg}")
+
+    # Normalize the data to range 0-255 for image representation
+    data_min = np.nanquantile(data_reprojected.values, 0.02)
+    data_max = np.nanquantile(data_reprojected.values, 0.98)
+
+    data_normalized = ((data_reprojected - data_min) / (data_max - data_min + EPS)) * 255
+    data_normalized = data_normalized.clip(0, 255).astype(np.uint8)
+
+    # Resize the DataArray to the specified thumbnail size
+    height, width = data.shape
+
+    # Calculate scaling factor to fit the longest axis to the thumbnail size
+    scale_factor = thumbnail_size / max(width, height)
+    new_width = math.ceil(width * scale_factor)
+    new_height = math.ceil(height * scale_factor)
+
+    # Use rasterio to resample the image
+    data_resized = data_normalized.rio.reproject(
+        data.rio.crs,
+        shape=(new_width, new_height),
+        resampling=Resampling.nearest,
+    )
+
+    # Convert the resized data to a PIL Image and save as PNG
+    image = Image.fromarray(data_resized.values)
+    image.save(out_fp.with_suffix(".png"))
 
 
 def image_to_base64(image_path: Path) -> str:

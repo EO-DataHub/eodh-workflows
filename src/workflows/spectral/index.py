@@ -80,6 +80,7 @@ def spectral_index(data_dir: Path, index: str, output_dir: Path | None = None) -
                         "max": vmax,
                         "steps": intervals,
                         "units": index_calculator.units,
+                        "mpl_equivalent_cmap": index_calculator.mpl_colormap[0],
                     },
                     "statistics": {
                         "minimum": index_raster.min().item(),
@@ -95,6 +96,9 @@ def spectral_index(data_dir: Path, index: str, output_dir: Path | None = None) -
                             "unit": index_calculator.units,
                         }
                     ],
+                    "proj:shape": index_raster.shape,
+                    "proj:transform": list(index_raster.rio.transform()),
+                    "proj:epsg": index_raster.rio.crs.to_epsg(),
                 },
             ),
         }
