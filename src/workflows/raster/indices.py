@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rioxarray  # noqa: F401
@@ -53,6 +53,19 @@ def rescale(data: xarray.DataArray, scale: float = 1e-4, offset: float = -0.1) -
 
 def sentinel_water_mask(scl_agg: xarray.DataArray) -> np.ndarray:  # type: ignore[type-arg]
     return np.where(scl_agg == SCL_WATER_CLASS, 1, 0)
+
+
+def raster_stats(data: xarray.DataArray) -> dict[str, float]:
+    return {
+        "minimum": data.min(skipna=True).item(),
+        "maximum": np.nanmax(data).item(),
+        "mean": data.mean(skipna=True).item(),
+        "median": data.median(skipna=True).item(),
+        "q01": data.quantile(0.01, skipna=True).item(),
+        "q99": data.quantile(0.99, skipna=True).item(),
+        "stddev": data.std(skipna=True).item(),
+        "valid_percent": (np.isnan(data.data).sum() / np.prod(data.shape)).item(),
+    }
 
 
 def cya_cells_ml(
@@ -329,7 +342,7 @@ def doc(
     Returns:
         DOC in mg / L.
     """
-    data = 432 * np.exp(-2.24 * (green_agg / (red_agg + EPS)))
+    data = 432 * np.exp(-2.24 * (green_agg / (red_agg + EPS)) + EPS)
     result_arr = xarray.DataArray(
         data,
         name="doc",
@@ -344,6 +357,11 @@ def prepare_data_array(
     item: pystac.Item, assets: list[str], bbox: tuple[float, float, float, float] | None = None
 ) -> xarray.DataArray:
     mapped_asset_ids = unify_asset_identifiers(assets_to_use=assets, collection=item.collection_id)
+
+    epsg: int | None = None
+    if not all(item.assets[a].extra_fields.get("proj:epsg", None) for a in assets):
+        epsg = item.properties.get("proj:epsg", None)
+
     return (
         (
             stackstac.stack(
@@ -351,6 +369,7 @@ def prepare_data_array(
                 assets=assets,
                 chunksize=consts.compute.CHUNK_SIZE,
                 bounds_latlon=bbox,
+                epsg=epsg,
             )
         )
         .assign_coords({"band": mapped_asset_ids})  # use common names
@@ -402,6 +421,39 @@ class IndexCalculator(abc.ABC):
     @abc.abstractmethod
     def collection_assets_to_use(self) -> dict[str, list[str]]: ...
 
+    @property
+    def raster_colormap(self) -> dict[str, Any]:
+        vmin, vmax, intervals = self.typical_range
+        js_cmap, cmap_reversed = self.js_colormap
+        return {
+            "name": js_cmap,
+            "reversed": cmap_reversed,
+            "min": vmin,
+            "max": vmax,
+            "steps": intervals,
+            "units": self.units,
+            "mpl_equivalent_cmap": self.mpl_colormap[0],
+        }
+
+    @property
+    def raster_bands(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "nodata": np.nan,
+                "unit": self.units,
+            }
+        ]
+
+    def asset_extra_fields(self, index_raster: xarray.DataArray) -> dict[str, Any]:
+        return {
+            "colormap": self.raster_colormap,
+            "statistics": raster_stats(index_raster),
+            "raster:bands": self.raster_bands,
+            "proj:shape": index_raster.shape,
+            "proj:transform": list(index_raster.rio.transform()),
+            "proj:epsg": index_raster.rio.crs.to_epsg(),
+        }
+
     @staticmethod
     @abc.abstractmethod
     def calculate_index(
@@ -427,7 +479,7 @@ class NDVI(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Normalized Difference Vegetation Index"
+        return "Normalized Difference Vegetation Index (NDVI)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -470,7 +522,7 @@ class NDWI(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Normalized Difference Water Index"
+        return "Normalized Difference Water Index (NDWI)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -513,7 +565,7 @@ class SAVI(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Soil Adjusted Vegetation Index"
+        return "Soil Adjusted Vegetation Index (SAVI)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -556,7 +608,7 @@ class EVI(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Enhanced Vegetation Index"
+        return "Enhanced Vegetation Index (EVI)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -600,7 +652,7 @@ class CyaCells(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Cyanobacteria Density (cells / mL)"
+        return "Cyanobacteria Density (CYA)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -632,13 +684,14 @@ class CyaCells(IndexCalculator):
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
         water_mask = sentinel_water_mask(raster_arr.sel(band="scl"))
-        return cya_cells_ml(
+        idx = cya_cells_ml(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             green_agg=rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset),
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
+        return idx.where(np.isfinite(idx), np.nan)
 
 
 class CyaMg(IndexCalculator):
@@ -648,7 +701,7 @@ class CyaMg(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Cyanobacteria Density (mg / m3)"
+        return "Cyanobacteria Density (CYA)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -680,12 +733,13 @@ class CyaMg(IndexCalculator):
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
         water_mask = sentinel_water_mask(raster_arr.sel(band="scl"))
-        return cya_mg_m3(
+        idx = cya_mg_m3(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
             water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
+        return idx.where(np.isfinite(idx), np.nan)
 
 
 class ChlACoastal(IndexCalculator):
@@ -695,7 +749,7 @@ class ChlACoastal(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Chlorophyll A (for coastal regions)"
+        return "Chlorophyll A (for coastal regions) (ChlA)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -727,12 +781,13 @@ class ChlACoastal(IndexCalculator):
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
         water_mask = sentinel_water_mask(raster_arr.sel(band="scl"))
-        return chl_a_coastal(
+        idx = chl_a_coastal(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
             water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
+        return idx.where(np.isfinite(idx), np.nan)
 
 
 class ChlALow(IndexCalculator):
@@ -742,7 +797,7 @@ class ChlALow(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Chlorophyll A (for low values)"
+        return "Chlorophyll A (for low values) (ChlA)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -774,12 +829,13 @@ class ChlALow(IndexCalculator):
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
         water_mask = sentinel_water_mask(raster_arr.sel(band="scl"))
-        return chl_a_low(
+        idx = chl_a_low(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             green_agg=rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset),
             water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
+        return idx.where(np.isfinite(idx), np.nan)
 
 
 class ChlAHigh(IndexCalculator):
@@ -789,7 +845,7 @@ class ChlAHigh(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Chlorophyll A (for high values)"
+        return "Chlorophyll A (for high values) (ChlA)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -821,12 +877,13 @@ class ChlAHigh(IndexCalculator):
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
         water_mask = sentinel_water_mask(raster_arr.sel(band="scl"))
-        return chl_a_high(
+        idx = chl_a_high(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
             water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
+        return idx.where(np.isfinite(idx), np.nan)
 
 
 class Turbidity(IndexCalculator):
@@ -836,7 +893,7 @@ class Turbidity(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Turbidity"
+        return "Turbidity (TURB)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -868,12 +925,13 @@ class Turbidity(IndexCalculator):
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
         water_mask = sentinel_water_mask(raster_arr.sel(band="scl"))
-        return turb(
+        idx = turb(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
             water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
+        return idx.where(np.isfinite(idx), np.nan)
 
 
 class DOC(IndexCalculator):
@@ -883,7 +941,7 @@ class DOC(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Dissolved Organic Carbon"
+        return "Dissolved Organic Carbon (DOC)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -915,12 +973,13 @@ class DOC(IndexCalculator):
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
         water_mask = sentinel_water_mask(raster_arr.sel(band="scl"))
-        return doc(
+        idx = doc(
             green_agg=rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset),
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
+        return idx.where(np.isfinite(idx), np.nan)
 
 
 class CDOM(IndexCalculator):
@@ -930,7 +989,7 @@ class CDOM(IndexCalculator):
 
     @property
     def full_name(self) -> str:
-        return "Colored Dissolved Organic Matter"
+        return "Colored Dissolved Organic Matter (CDOM)"
 
     @property
     def typical_range(self) -> tuple[float, float, int]:
@@ -962,12 +1021,13 @@ class CDOM(IndexCalculator):
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
         water_mask = sentinel_water_mask(raster_arr.sel(band="scl"))
-        return cdom(
+        idx = cdom(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
+        return idx.where(np.isfinite(idx), np.nan)
 
 
 _SPECTRAL_INDEX_CLS: set[type[IndexCalculator]] = {

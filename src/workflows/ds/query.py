@@ -9,7 +9,7 @@ import pystac
 from pystac_client import Client
 from shapely.geometry import mapping
 
-from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.consts.directories import LOCAL_DATA_DIR
 from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
 from src.utils.sentinel_hub import sh_auth_token
@@ -24,9 +24,9 @@ from src.workflows.ds.utils import (
 _logger = get_logger(__name__)
 
 
-@click.command(help="Calculate spectral index")
+@click.command(help="Query Specified STAC Collection")
 @click.option(
-    "--stac_collection",
+    "--dataset",
     required=True,
     help="The name of the STAC collection to get the data from",
 )
@@ -100,24 +100,28 @@ def query(
     cloud_cover_max: int | None = None,
     output_dir: Path | None = None,
 ) -> None:
+    aoi = json.loads(area)
     _logger.info(
         "Running with:\n%s",
         json.dumps(
             {
                 "stac_collection": stac_collection,
-                "aoi": area,
+                "area": area,
                 "date_start": date_start,
                 "date_end": date_end,
                 "limit": limit,
                 "clip": clip,
+                "polarization": polarization,
+                "orbit_direction": orbit_direction,
+                "cloud_cover_min": cloud_cover_min,
+                "cloud_cover_max": cloud_cover_max,
                 "output_dir": output_dir.as_posix() if output_dir is not None else None,
             },
             indent=4,
         ),
     )
-    aoi = json.loads(area)
 
-    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
+    output_dir = output_dir or LOCAL_DATA_DIR / "ds-query"
     output_dir.mkdir(exist_ok=True, parents=True)
 
     if stac_collection == "sentinel-1-grd":
@@ -190,15 +194,13 @@ def handle_s2_query(
     aoi: dict[str, Any],
     date_start: str,
     date_end: str,
+    output_dir: Path,
     limit: int = 50,
     clip: Literal["True", "False"] = "False",
     cloud_cover_min: int | None = None,
     cloud_cover_max: int | None = None,
-    output_dir: Path | None = None,
 ) -> None:
     # Ensure output directory is set
-    if output_dir is None:
-        output_dir = Path("./stac_downloads")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Connect to STAC API
@@ -227,6 +229,9 @@ def handle_s2_query(
         filter_lang="cql2-json",
         filter=filter_spec,
         max_items=limit,
+        fields={
+            "include": ["properties.proj:epsg"],
+        },
     )
 
     downloaded = download_search_results(

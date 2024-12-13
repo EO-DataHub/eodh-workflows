@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 import click
-import numpy as np
 import rioxarray
 from pystac_client import Client
 from tqdm import tqdm
@@ -110,7 +109,7 @@ def calculate(
     for item in progress_bar:
         progress_bar.set_description(f"Working with: {item.id}")
 
-        raster_path = output_dir / f"{item.id}.tif"
+        raster_path = output_dir / f"{item.id}_{index_calculator.name}.tif"
         if raster_path.exists():
             _logger.info("%s already exists. Loading....", raster_path.as_posix())
             index_raster = rioxarray.open_rasterio(raster_path)
@@ -121,9 +120,8 @@ def calculate(
             )
             raster_path = save_cog(arr=index_raster, asset_id=item.id, output_dir=output_dir, epsg=WGS84)
 
-        vmin, vmax, intervals = index_calculator.typical_range
+        vmin, vmax, _ = index_calculator.typical_range
         mpl_cmap, _ = index_calculator.mpl_colormap
-        js_cmap, cmap_reversed = index_calculator.js_colormap
         thumb_fp = output_dir / f"{item.id}.png"
         generate_thumbnail_with_continuous_colormap(
             index_raster,
@@ -139,31 +137,7 @@ def calculate(
             "data": prepare_stac_asset(
                 file_path=raster_path,
                 title=index_calculator.full_name,
-                asset_extra_fields={
-                    "colormap": {
-                        "name": js_cmap,
-                        "reversed": cmap_reversed,
-                        "min": vmin,
-                        "max": vmax,
-                        "steps": intervals,
-                        "units": index_calculator.units,
-                        "mpl_equivalent_cmap": mpl_cmap,
-                    },
-                    "statistics": {
-                        "minimum": index_raster.min().item(),
-                        "maximum": index_raster.max().item(),
-                        "mean": index_raster.mean().item(),
-                        "median": index_raster.median().item(),
-                        "stddev": index_raster.std().item(),
-                        "valid_percent": (np.isnan(index_raster.data).sum() / np.prod(index_raster.shape)).item(),
-                    },
-                    "raster:bands": [
-                        {
-                            "nodata": np.nan,
-                            "unit": index_calculator.units,
-                        }
-                    ],
-                },
+                asset_extra_fields=index_calculator.asset_extra_fields(index_raster),
             ),
         }
 
@@ -232,6 +206,9 @@ def query_stac(
         filter_lang="cql2-json",
         filter=filter_spec,
         max_items=limit,
+        fields={
+            "include": ["properties.proj:epsg"],
+        },
     )
 
     return sorted(search.items(), key=lambda x: x.datetime)

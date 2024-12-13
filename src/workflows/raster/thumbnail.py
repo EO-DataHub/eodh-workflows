@@ -8,7 +8,7 @@ import click
 import rioxarray
 from tqdm import tqdm
 
-from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.consts.directories import LOCAL_DATA_DIR
 from src.utils.logging import get_logger
 from src.utils.raster import (
     generate_thumbnail_as_grayscale_image,
@@ -47,7 +47,7 @@ def generate_thumbnail_for_stac_items(
             indent=4,
         ),
     )
-    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
+    output_dir = output_dir or LOCAL_DATA_DIR / "raster-thumbnail"
     output_dir.mkdir(exist_ok=True, parents=True)
 
     local_stac = read_local_stac(data_dir)

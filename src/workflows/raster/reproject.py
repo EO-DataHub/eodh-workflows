@@ -10,7 +10,7 @@ import rasterio.mask
 import rioxarray
 from tqdm import tqdm
 
-from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.consts.directories import LOCAL_DATA_DIR
 from src.utils.logging import get_logger
 from src.utils.stac import read_local_stac, write_local_stac
 
@@ -51,7 +51,7 @@ def reproject_stac_items(data_dir: Path, epsg: str, output_dir: Path | None = No
         ),
     )
 
-    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
+    output_dir = output_dir or LOCAL_DATA_DIR / "raster-reproject"
     output_dir.mkdir(exist_ok=True, parents=True)
 
     local_stac = read_local_stac(data_dir)

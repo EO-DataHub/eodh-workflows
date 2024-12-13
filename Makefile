@@ -11,7 +11,7 @@ CONDA_ENV_NAME=eodh-workflows
 CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate $(CONDA_ENV_NAME)
 CONDA_ACTIVATE_BASE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate base
 
-IMAGE_NAME=eodh-workflows
+IMAGE_NAME=eopro-workflows
 CONTAINER_NAME=eodh-workflows
 DOCKERFILE_PATH=.
 
@@ -184,8 +184,8 @@ docker-rmi:
 
 .PHONY: docker-prune  ## Clean build cache
 docker-prune:
-	@echo "Cleaning build cache..."
-	docker builder prune --force
+	@echo "Running docker system prune..."
+	docker system prune -a --force
 
 .PHONY: docker-clean  ## Clean up everything (container and image)
 docker-clean: docker-stop docker-rm docker-rmi docker-prune
@@ -279,14 +279,18 @@ spectral-index-s2-doc:
 	--index=doc \
 	--output_dir "./data/processed/eopro/spectral-index/s2-doc"
 
-# CWL workflow execution commands
-
 .PHONY: reproject-s2-ndvi ## Works after spectral-index-s2-ndvi
 reproject-s2-ndvi:
 	eopro raster reproject \
 	--data_dir "./data/processed/eopro/spectral-index/s2-ndvi" \
 	--epsg=EPSG:4326 \
 	--output_dir "./data/processed/eopro/raster-reproject/s2-ndvi"
+
+.PHONY: water-quality ## Works after clip-s2
+water-quality:
+	eopro water quality \
+	--data_dir "./data/processed/eopro/raster-clip/s2" \
+	--output_dir "./data/processed/eopro/water-quality/s2"
 
 # CWL workflow execution commands
 
@@ -298,7 +302,7 @@ ndvi-pipeline:
 	make reproject-s2-ndvi
 
 .PHONY: cwl-ndvi  ## Runs Raster Calculator
-cwl-raster-calculator:
+cwl-ndvi:
 	@cwltool ./cwl_files/local/raster-calculate-app.cwl\#raster-calculate \
 		--stac_collection sentinel-2-l2a \
 		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
@@ -341,3 +345,68 @@ cwl-water-quality:
 		--date_end 2024-12-31T23:59:59Z \
 		--limit=5 \
 		--clip=True
+
+.PHONY: v2-cwl-all
+v2-cwl-all:
+#	@cwltool ./cwl_files/local/raster-calculate-app.cwl\#raster-calculate \
+#		--stac_collection sentinel-2-l2a \
+#		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+#		--date_start 2024-01-01T00:00:00Z \
+#		--date_end 2024-12-31T23:59:59Z \
+#		--limit=2 \
+#		--index=$(INDEX) \
+#		--clip=True
+	cwltool ./cwl_files/local/water-quality.cwl\#enchanting-ape-122 \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+		--dataset sentinel-2-l2a \
+		--date_start 2024-03-01 \
+		--date_end 2024-10-10 \
+		--query_clip True \
+		--query_limit 10 \
+		--query_cloud_cover_min 0 \
+		--query_cloud_cover_max 100 \
+		--reproject_epsg EPSG:3857
+#	cwltool ./cwl_files/local/advanced-water-quality.yaml\#sincere-grub-291 \
+#		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+#		--dataset sentinel-2-l2a \
+#		--date_start 2024-03-01 \
+#		--date_end 2024-10-10 \
+#		--query_clip True \
+#		--query_limit 10 \
+#		--query_cloud_cover_min 0 \
+#		--query_cloud_cover_max 100 \
+#		--cya_index cya \
+#		--reproject_cya_epsg EPSG:3857 \
+#		--doc_index doc \
+#		--reproject_doc_epsg EPSG:3857 \
+#		--cdom_index cdom \
+#		--reproject_cdom_epsg EPSG:3857
+#	cwltool ./cwl_files/local/simplest-ndvi.yaml\#nosy-franklin-158 \
+#		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+#		--dataset sentinel-2-l2a \
+#		--date_start 2024-03-01 \
+#		--date_end 2024-10-10 \
+#		--query_clip True \
+#		--query_limit 10 \
+#		--query_cloud_cover_min 0 \
+#		--query_cloud_cover_max 100 \
+#		--ndvi_index ndvi
+#	@cwltool ./cwl_files/local/ndvi-clip-reproject.yaml\#unequaled-ram-323 \
+#		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+#		--dataset sentinel-2-l2a \
+#		--date_start 2024-03-01 \
+#		--date_end 2024-10-10 \
+#		--query_clip True \
+#		--query_limit 10 \
+#		--query_cloud_cover_min 0 \
+#		--query_cloud_cover_max 100 \
+#		--ndvi_index ndvi \
+#		--reproject_epsg EPSG:3857
+#	@cwltool ./cwl_files/local/ndvi-clip-reproject.yaml\#burly-allen-503 \
+#		area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
+#		--dataset esa-lccci-glcm \
+#		--date_start 1994-01-01 \
+#		--date_end 2015-12-31 \
+#		--query_limit 10 \
+#		--query_clip True \
+#		--reproject_epsg EPSG:3857

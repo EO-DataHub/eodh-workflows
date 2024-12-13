@@ -4,10 +4,9 @@ import json
 from pathlib import Path
 
 import click
-import numpy as np
 from tqdm import tqdm
 
-from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.consts.directories import LOCAL_DATA_DIR
 from src.utils.logging import get_logger
 from src.utils.raster import save_cog
 from src.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, read_local_stac
@@ -49,7 +48,7 @@ def spectral_index(data_dir: Path, index: str, output_dir: Path | None = None) -
         ),
     )
 
-    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
+    output_dir = output_dir or LOCAL_DATA_DIR / f"spectral-index-{index.lower()}"
     output_dir.mkdir(exist_ok=True, parents=True)
 
     local_stac = read_local_stac(data_dir)
@@ -66,40 +65,11 @@ def spectral_index(data_dir: Path, index: str, output_dir: Path | None = None) -
             asset_id=index,
             output_dir=output_dir / asset_dir.relative_to(data_dir),
         )
-        vmin, vmax, intervals = index_calculator.typical_range
-        js_cmap, cmap_reversed = index_calculator.js_colormap
         assets = {
-            "ndvi": prepare_stac_asset(
+            index_calculator.name: prepare_stac_asset(
                 file_path=fp.resolve().absolute(),
                 title=index_calculator.full_name,
-                asset_extra_fields={
-                    "colormap": {
-                        "name": js_cmap,
-                        "reversed": cmap_reversed,
-                        "min": vmin,
-                        "max": vmax,
-                        "steps": intervals,
-                        "units": index_calculator.units,
-                        "mpl_equivalent_cmap": index_calculator.mpl_colormap[0],
-                    },
-                    "statistics": {
-                        "minimum": index_raster.min().item(),
-                        "maximum": index_raster.max().item(),
-                        "mean": index_raster.mean().item(),
-                        "median": index_raster.median().item(),
-                        "stddev": index_raster.std().item(),
-                        "valid_percent": (np.isnan(index_raster.data).sum() / np.prod(index_raster.shape)).item(),
-                    },
-                    "raster:bands": [
-                        {
-                            "nodata": np.nan,
-                            "unit": index_calculator.units,
-                        }
-                    ],
-                    "proj:shape": index_raster.shape,
-                    "proj:transform": list(index_raster.rio.transform()),
-                    "proj:epsg": index_raster.rio.crs.to_epsg(),
-                },
+                asset_extra_fields=index_calculator.asset_extra_fields(index_raster),
             ),
         }
         items.append(
@@ -109,7 +79,6 @@ def spectral_index(data_dir: Path, index: str, output_dir: Path | None = None) -
                 epsg=index_raster.rio.crs.to_epsg(),
                 transform=list(index_raster.rio.transform()),
                 datetime=item.datetime,
-                additional_prop={},
                 assets=assets,
             )
         )

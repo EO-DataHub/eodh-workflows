@@ -9,7 +9,7 @@ import numpy as np
 import rioxarray
 from tqdm import tqdm
 
-from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.consts.directories import LOCAL_DATA_DIR
 from src.utils.geom import calculate_geodesic_area
 from src.utils.logging import get_logger
 from src.utils.raster import get_raster_polygon, save_cog_v2
@@ -44,7 +44,7 @@ def summarize_classes(data_dir: Path, output_dir: Path | None = None) -> None:
         "Running with:\n%s",
         json.dumps(initial_arguments, indent=4),
     )
-    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
+    output_dir = output_dir or LOCAL_DATA_DIR / "classification-summarize"
     output_dir.mkdir(exist_ok=True, parents=True)
 
     local_stac = read_local_stac(data_dir)
