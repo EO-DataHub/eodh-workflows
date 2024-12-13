@@ -108,7 +108,7 @@ def save_cog_v2(arr: xr.DataArray, output_file_path: Path) -> Path:
     if arr.rio.crs is None:
         _logger.warning("CRS on `rio` accessor for item '%s' was not set", output_file_path.as_posix())
 
-    arr.rio.to_raster(output_file_path.as_posix(), driver="COG", windowed=True)
+    arr.rio.to_raster(output_file_path.as_posix(), driver="COG")
 
     return output_file_path
 

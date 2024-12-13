@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Literal
 
 import click
-import numpy as np
 from tqdm import tqdm
 
 from src.consts.crs import WGS84
@@ -131,11 +130,13 @@ def water_quality(  # noqa: PLR0914, RUF100
                 rescale_offset=offset,
             )
             raster_path = save_cog(
-                arr=index_raster, asset_id=f"{item.id}_{index_calculator.name}", output_dir=output_dir, epsg=WGS84
+                arr=index_raster,
+                asset_id=f"{item.id}_{index_calculator.name}",
+                output_dir=output_dir,
+                epsg=WGS84,
             )
 
-            vmin, vmax, intervals = index_calculator.typical_range
-            js_cmap, cmap_reversed = index_calculator.js_colormap
+            vmin, vmax, _ = index_calculator.typical_range
 
             if index_calculator.name == "doc":  # Use DOC as item's thumbnail
                 mpl_cmap, _ = index_calculator.mpl_colormap
@@ -154,30 +155,7 @@ def water_quality(  # noqa: PLR0914, RUF100
             data_asset = prepare_stac_asset(
                 title=index_calculator.full_name,
                 file_path=raster_path,
-                asset_extra_fields={
-                    "colormap": {
-                        "name": js_cmap,
-                        "reversed": cmap_reversed,
-                        "min": vmin,
-                        "max": vmax,
-                        "steps": intervals,
-                    },
-                    "statistics": {
-                        "minimum": index_raster.min().item(),
-                        "maximum": index_raster.max().item(),
-                        "mean": index_raster.mean().item(),
-                        "median": index_raster.median().item(),
-                        "stddev": index_raster.std().item(),
-                        "valid_percent": 1.0 - (np.isnan(index_raster.data).sum() / np.prod(index_raster.shape)).item(),
-                    },
-                    "raster:bands": [
-                        {
-                            "data_type": "float32",
-                            "nodata": np.nan,
-                            "unit": index_calculator.units,
-                        }
-                    ],
-                },
+                asset_extra_fields=index_calculator.asset_extra_fields(index_raster),
             )
             out_item.add_asset(index_calculator.name, data_asset)
 

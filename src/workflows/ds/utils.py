@@ -34,9 +34,9 @@ DATASET_TO_CATALOGUE_LOOKUP = {
     "sentinel-2-l1c": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/earth-search-aws",
     "sentinel-2-l2a": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/earth-search-aws",
     "sentinel-2-l2a-ard": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/ceda-stac-catalogue",
-    "esa-lccci-glcm": f"{consts.stac.CEDA_CATALOG_API_ENDPOINT}",
-    "clms-corine-lc": f"{consts.stac.SH_CATALOG_API_ENDPOINT}",
-    "clms-water-bodies": f"{consts.stac.SH_CATALOG_API_ENDPOINT}",
+    "esa-lccci-glcm": consts.stac.CEDA_CATALOG_API_ENDPOINT,
+    "clms-corine-lc": consts.stac.SH_CATALOG_API_ENDPOINT,
+    "clms-water-bodies": consts.stac.SH_CATALOG_API_ENDPOINT,
 }
 DATASET_TO_COLLECTION_LOOKUP = {
     "sentinel-2-l1c": "sentinel-2-l1c",

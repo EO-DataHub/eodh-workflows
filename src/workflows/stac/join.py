@@ -8,7 +8,7 @@ import click
 import pystac
 from pystac import Asset, Catalog
 
-from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.consts.directories import LOCAL_DATA_DIR
 from src.utils.logging import get_logger
 
 _logger = get_logger(__name__)
@@ -53,7 +53,7 @@ def join(stac_catalog_dir_1: Path, stac_catalog_dir_2: Path, output_dir: Path | 
         msg = f"catalog.json does not exist under {stac_catalog_dir_2.as_posix()}"
         raise ValueError(msg)
 
-    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
+    output_dir = output_dir or LOCAL_DATA_DIR / "stac-join"
     output_dir.mkdir(exist_ok=True, parents=True)
     merge_stac_catalogs(
         catalog1_path=stac_catalog_dir_1 / "catalog.json",

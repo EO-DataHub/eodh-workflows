@@ -87,7 +87,7 @@ def prepare_stac_item(
     epsg: int,
     transform: list[float],
     datetime: str,
-    additional_prop: dict[str, Any],
+    additional_prop: dict[str, Any] | None = None,
     assets: dict[str, pystac.Asset] | None = None,
 ) -> pystac.Item:
     item = pystac.Item(
@@ -95,7 +95,7 @@ def prepare_stac_item(
         geometry=mapping(geometry) if isinstance(geometry, Polygon) else geometry,
         bbox=geometry.bounds if isinstance(geometry, Polygon) else shape(geometry).bounds,
         datetime=datetime,
-        properties=additional_prop,
+        properties=additional_prop or {},
     )
 
     projection = ProjectionExtension.ext(item, add_if_missing=True)
