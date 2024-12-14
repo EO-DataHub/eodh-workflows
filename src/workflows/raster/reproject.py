@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -52,57 +53,52 @@ def reproject_stac_items(data_dir: Path, epsg: str, output_dir: Path | None = No
     )
 
     output_dir = output_dir or LOCAL_DATA_DIR / "raster-reproject"
+    output_dir = output_dir.absolute()
     output_dir.mkdir(exist_ok=True, parents=True)
+    data_dir = data_dir.absolute()
 
     local_stac = read_local_stac(data_dir)
-
-    # Calculate the total number of assets with the role "data"
-    total_data_assets = sum(
-        sum(1 for asset in item.assets.values() if asset.roles and "data" in asset.roles)
-        for item in local_stac.get_items(recursive=True)
-    )
+    local_stac.make_all_asset_hrefs_absolute()
 
     # Initialize a progress bar based on the number of "data" assets
-    progress_bar = tqdm(total=total_data_assets, desc="Clipping assets")
-
-    for item in local_stac.get_items(recursive=True):
+    for item in tqdm(list(local_stac.get_items(recursive=True)), desc="Reprojecting items"):
         for asset_key, asset in item.assets.items():
-            if asset.roles and "data" in asset.roles:
-                # Update the progress bar description with the current item and asset being processed
-                progress_bar.set_description(f"Working with: {item.id}, asset: {asset_key}")
+            asset_out_fp = (output_dir / Path(asset.href).relative_to(data_dir)).absolute()
+            if not (
+                (asset.roles and "data" in asset.roles)
+                or (asset.extra_fields.get("role", []) and "data" in asset.extra_fields.get("role", []))
+            ):
+                _logger.info("Asset %s cannot be reprojected. Copying to output dir as is.", asset_key)
+                shutil.copy(Path(asset.href), asset_out_fp)
+                asset.href = asset_out_fp
+                continue
 
-                # Process the asset by clipping the raster
-                asset_path = Path(asset.href)
-                reprojected_raster_fp = _reproject_raster(
-                    file_path=asset_path,
-                    epsg=epsg,
-                    output_file_path=output_dir / asset_path.relative_to(data_dir),
-                )
+            # Process the asset by clipping the raster
+            asset_path = Path(asset.href)
+            reprojected_raster_fp = _reproject_raster(
+                file_path=asset_path,
+                epsg=epsg,
+                output_file_path=output_dir / asset_path.relative_to(data_dir),
+            )
 
-                # Update the asset's href to point to the clipped raster
-                asset.href = reprojected_raster_fp.as_posix()
+            # Update the asset's href to point to the clipped raster
+            asset.href = reprojected_raster_fp.as_posix()
 
-                # Update the size field in the asset's extra_fields if it exists
-                if "size" in asset.extra_fields:
-                    asset.extra_fields["size"] = reprojected_raster_fp.stat().st_size
+            # Update the size field in the asset's extra_fields if it exists
+            if "size" in asset.extra_fields:
+                asset.extra_fields["size"] = reprojected_raster_fp.stat().st_size
 
-                # Update asset PROJ metadata
-                src: rasterio.DatasetReader
-                with rasterio.open(reprojected_raster_fp) as src:
-                    src_transform: Affine = src.transform
-                    shape = src.shape
-                    asset.extra_fields["proj:shape"] = shape
-                    asset.extra_fields["proj:transform"] = list(src_transform)
-                    asset.extra_fields["proj:epsg"] = src.crs.to_epsg()
-                    item.properties["proj:epsg"] = src.crs.to_epsg()
-                    item.properties.pop("proj:transform", None)
-                    item.properties.pop("proj:shape", None)
-
-                # Increment the progress bar for each processed asset
-                progress_bar.update(1)
-
-    # Close the progress bar after processing is complete
-    progress_bar.close()
+            # Update asset PROJ metadata
+            src: rasterio.DatasetReader
+            with rasterio.open(reprojected_raster_fp) as src:
+                src_transform: Affine = src.transform
+                shape = src.shape
+                asset.extra_fields["proj:shape"] = shape
+                asset.extra_fields["proj:transform"] = list(src_transform)
+                asset.extra_fields["proj:epsg"] = src.crs.to_epsg()
+                item.properties["proj:epsg"] = src.crs.to_epsg()
+                item.properties.pop("proj:transform", None)
+                item.properties.pop("proj:shape", None)
 
     # Save local STAC
     write_local_stac(local_stac, output_dir, "EOPro Reprojected Data", "EOPro Reprojected Data")

@@ -193,113 +193,8 @@ docker-clean: docker-stop docker-rm docker-rmi docker-prune
 .PHONY: docker-rebuild  ## Rebuild and rerun Docker container
 docker-rebuild: docker-stop docker-rm docker-rmi docker-all
 
-# Command line execution commands
-
-.PHONY: query-s2 ## Query Sentinel-2
-query-s2:
-	eopro ds query \
-	--stac_collection sentinel-2-l2a \
-	--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-	--date_start 2024-01-01T00:00:00Z \
-	--date_end 2024-12-31T23:59:59Z \
-	--output_dir "./data/processed/eopro/ds-query/s2"
-
-.PHONY: clip-s2 ## Works after query-s2
-clip-s2:
-	eopro raster clip \
-	--data_dir "./data/processed/eopro/ds-query/s2" \
-	--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.65,4.35],[71.8,4.35],[71.8,4.5],[71.65,4.5],[71.65,4.35]]]}" \
-	--output_dir "./data/processed/eopro/raster-clip/s2"
-
-.PHONY: query-globallc ## Query ESA Global LC
-query-globallc:
-	eopro ds query \
- 	--stac_collection esa-lccci-glcm \
-	--area "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
-	--date_start 2008-01-01T00:00:00Z \
-	--date_end 2010-12-31T23:59:59Z \
-	--output_dir "./data/processed/eopro/ds-query/esa-lccci-glcm"
-
-.PHONY: clip-globallc ## Works after query-globallc
-clip-globallc:
-	eopro raster clip \
- 	--data_dir "./data/processed/eopro/ds-query/esa-lccci-glcm" \
-	--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[15.0, 50.9],[15.03, 50.9],[15.03, 50.95],[15.0, 50.95],[15.0, 50.9]]]}" \
-	--output_dir "./data/processed/eopro/raster-clip/esa-lccci-glcm"
-
-.PHONY: summarize-classes-globallc ## Works after query-globallc or clip-globallc
-summarize-classes-globallc:
-	eopro classification summarize \
-	--data_dir "./data/processed/eopro/raster-clip/esa-lccci-glcm" \
-	--output_dir "./data/processed/eopro/classification-summarize/esa-lccci-glcm"
-
-.PHONY: query-corine ## Query CORINE Land Cover
-query-corine:
-	eopro ds query \
- 	--stac_collection clms-corine-lc \
-	--area "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
-	--date_start 2006-01-01T00:00:00Z \
-	--date_end 2018-12-31T23:59:59Z \
-	--output_dir "./data/processed/eopro/ds-query/corine"
-
-.PHONY: summarize-classes-corine ## Works after query-corine
-summarize-classes-corine:
-	eopro classification summarize \
-	--data_dir "./data/processed/eopro/ds-query/corine" \
-	--output_dir "./data/processed/eopro/classification-summarize/corine"
-
-.PHONY: query-wb ## Query Water Bodies
-query-wb:
-	eopro ds query \
-	--stac_collection clms-water-bodies \
-	--area "{\"type\": \"Polygon\",\"coordinates\": [[[14.82449, 50.99583],[14.82449, 51.15208],[15.09065, 51.15208],[15.09065, 50.99583],[14.82449, 50.99583]]]}" \
-	--date_start 2024-01-01T00:00:00Z \
-	--date_end 2024-03-31T23:59:59Z \
-	--output_dir "./data/processed/eopro/ds-query/water-bodies"
-
-.PHONY: summarize-classes-wb ## Works after query-wb
-summarize-classes-wb:
-	eopro classification summarize \
-	--data_dir "./data/processed/eopro/ds-query/water-bodies" \
-	--output_dir "./data/processed/eopro/classification-summarize/water-bodies"
 
 # CWL workflow execution commands
-
-.PHONY: spectral-index-s2-ndvi ## Works after clip-s2
-spectral-index-s2-ndvi:
-	eopro spectral index \
-	--data_dir "./data/processed/eopro/raster-clip/s2" \
-	--index=ndvi \
-	--output_dir "./data/processed/eopro/spectral-index/s2-ndvi"
-
-.PHONY: spectral-index-s2-doc ## Works after clip-s2
-spectral-index-s2-doc:
-	eopro spectral index \
-	--data_dir "./data/processed/eopro/raster-clip/s2" \
-	--index=doc \
-	--output_dir "./data/processed/eopro/spectral-index/s2-doc"
-
-.PHONY: reproject-s2-ndvi ## Works after spectral-index-s2-ndvi
-reproject-s2-ndvi:
-	eopro raster reproject \
-	--data_dir "./data/processed/eopro/spectral-index/s2-ndvi" \
-	--epsg=EPSG:4326 \
-	--output_dir "./data/processed/eopro/raster-reproject/s2-ndvi"
-
-.PHONY: water-quality ## Works after clip-s2
-water-quality:
-	eopro water quality \
-	--data_dir "./data/processed/eopro/raster-clip/s2" \
-	--output_dir "./data/processed/eopro/water-quality/s2"
-
-# CWL workflow execution commands
-
-.PHONY: ndvi-pipeline
-ndvi-pipeline:
-	make query-s2
-	make clip-s2
-	make spectral-index-s2-ndvi
-	make reproject-s2-ndvi
 
 .PHONY: cwl-ndvi  ## Runs Raster Calculator
 cwl-ndvi:
@@ -346,67 +241,110 @@ cwl-water-quality:
 		--limit=5 \
 		--clip=True
 
-.PHONY: v2-cwl-all
-v2-cwl-all:
-#	@cwltool ./cwl_files/local/raster-calculate-app.cwl\#raster-calculate \
-#		--stac_collection sentinel-2-l2a \
-#		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-#		--date_start 2024-01-01T00:00:00Z \
-#		--date_end 2024-12-31T23:59:59Z \
-#		--limit=2 \
-#		--index=$(INDEX) \
-#		--clip=True
-	cwltool ./cwl_files/local/water-quality.cwl\#enchanting-ape-122 \
+# CWL V2 commands
+
+.PHONY: v2-cwl-ndvi-simple
+v2-cwl-ndvi-simple:
+	make docker-build
+	cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
+		--tmpdir-prefix=./data/processed/cwl/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/ndvi-simple/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/simplest-ndvi.cwl\#useful-conch-220 \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--dataset sentinel-2-l2a \
 		--date_start 2024-03-01 \
 		--date_end 2024-10-10 \
 		--query_clip True \
-		--query_limit 10 \
+		--query_limit 2 \
+		--query_cloud_cover_min 0 \
+		--query_cloud_cover_max 100 \
+		--ndvi_index ndvi
+
+.PHONY: v2-cwl-ndvi-full
+v2-cwl-ndvi-full:
+	make docker-build
+	cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/ndvi-full/$(shell date --iso-8601=minutes)/tmp/ \
+		--tmpdir-prefix=./data/processed/cwl/ndvi-full/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/ndvi-full/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/ndvi-clip-reproject.cwl\#nosy-conch-601 \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+		--dataset sentinel-2-l2a \
+		--date_start 2024-03-01 \
+		--date_end 2024-10-10 \
+		--query_clip True \
+		--query_limit 2 \
+		--query_cloud_cover_min 0 \
+		--query_cloud_cover_max 100 \
+		--ndvi_index ndvi \
+		--reproject_epsg EPSG:3857
+
+.PHONY: v2-cwl-wq
+v2-cwl-wq:
+	make docker-build
+	cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/tmp/ \
+		--tmpdir-prefix=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/water-quality.cwl\#spiffy-grouse-766 \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+		--dataset sentinel-2-l2a \
+		--date_start 2024-03-01 \
+		--date_end 2024-10-10 \
+		--query_clip True \
+		--query_limit 2 \
 		--query_cloud_cover_min 0 \
 		--query_cloud_cover_max 100 \
 		--reproject_epsg EPSG:3857
-#	cwltool ./cwl_files/local/advanced-water-quality.yaml\#sincere-grub-291 \
-#		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-#		--dataset sentinel-2-l2a \
-#		--date_start 2024-03-01 \
-#		--date_end 2024-10-10 \
-#		--query_clip True \
-#		--query_limit 10 \
-#		--query_cloud_cover_min 0 \
-#		--query_cloud_cover_max 100 \
-#		--cya_index cya \
-#		--reproject_cya_epsg EPSG:3857 \
-#		--doc_index doc \
-#		--reproject_doc_epsg EPSG:3857 \
-#		--cdom_index cdom \
-#		--reproject_cdom_epsg EPSG:3857
-#	cwltool ./cwl_files/local/simplest-ndvi.yaml\#nosy-franklin-158 \
-#		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-#		--dataset sentinel-2-l2a \
-#		--date_start 2024-03-01 \
-#		--date_end 2024-10-10 \
-#		--query_clip True \
-#		--query_limit 10 \
-#		--query_cloud_cover_min 0 \
-#		--query_cloud_cover_max 100 \
-#		--ndvi_index ndvi
-#	@cwltool ./cwl_files/local/ndvi-clip-reproject.yaml\#unequaled-ram-323 \
-#		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-#		--dataset sentinel-2-l2a \
-#		--date_start 2024-03-01 \
-#		--date_end 2024-10-10 \
-#		--query_clip True \
-#		--query_limit 10 \
-#		--query_cloud_cover_min 0 \
-#		--query_cloud_cover_max 100 \
-#		--ndvi_index ndvi \
-#		--reproject_epsg EPSG:3857
-#	@cwltool ./cwl_files/local/ndvi-clip-reproject.yaml\#burly-allen-503 \
-#		area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
-#		--dataset esa-lccci-glcm \
-#		--date_start 1994-01-01 \
-#		--date_end 2015-12-31 \
-#		--query_limit 10 \
-#		--query_clip True \
-#		--reproject_epsg EPSG:3857
+
+.PHONY: v2-cwl-adv-wq
+v2-cwl-adv-wq:
+	make docker-build
+	cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/tmp/ \
+		--tmpdir-prefix=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/advanced-water-quality.cwl\#nosy-kit-266 \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+		--dataset sentinel-2-l2a \
+		--date_start 2024-03-01 \
+		--date_end 2024-10-10 \
+		--query_clip True \
+		--query_limit 2 \
+		--query_cloud_cover_min 0 \
+		--query_cloud_cover_max 100 \
+		--cya_index cya_cells \
+		--reproject_cya_epsg EPSG:3857 \
+		--doc_index doc \
+		--reproject_doc_epsg EPSG:3857 \
+		--cdom_index cdom \
+		--reproject_cdom_epsg EPSG:3857
+
+.PHONY: v2-cwl-lc
+v2-cwl-lc:
+	make docker-build
+	cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/lc/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/lc/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+ 		./cwl_files/local/land-cover.cwl\#bright-colden-259 \
+		--area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
+		--dataset esa-lccci-glcm \
+		--date_start 1994-01-01 \
+		--date_end 2015-12-31 \
+		--query_limit 2 \
+		--query_clip True \
+		--reproject_epsg EPSG:3857
+
+.PHONY: v2-cwl-all
+v2-cwl-all: v2-cwl-ndvi-simple v2-cwl-ndvi-simple v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc

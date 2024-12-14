@@ -26,7 +26,7 @@ _logger = get_logger(__name__)
 
 @click.command(help="Query Specified STAC Collection")
 @click.option(
-    "--dataset",
+    "--stac_collection",
     required=True,
     help="The name of the STAC collection to get the data from",
 )
