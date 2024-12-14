@@ -56,6 +56,7 @@ def generate_thumbnail_for_stac_items(
     for item in tqdm(list(local_stac.get_items(recursive=True)), desc="Processing STAC items"):
         asset_dir = Path(next(iter(item.assets.values())).href).parent
         asset_out_dir = output_dir / asset_dir.relative_to(data_dir.absolute())
+        asset_out_dir.mkdir(exist_ok=True, parents=True)
 
         for asset in item.assets.values():
             asset_fp = Path(asset.href)

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 
-from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.consts.directories import LOCAL_DATA_DIR
 from src.utils.logging import get_logger
 from src.utils.raster import get_raster_bounds, save_cog
 from src.utils.stac import (
@@ -49,7 +49,7 @@ def water_quality(data_dir: Path, output_dir: Path | None = None) -> None:
         ),
     )
     data_dir = data_dir.absolute()
-    output_dir = output_dir or LOCAL_STAC_OUTPUT_DIR
+    output_dir = output_dir or LOCAL_DATA_DIR / "water-quality"
     output_dir.mkdir(exist_ok=True, parents=True)
 
     output_items = []

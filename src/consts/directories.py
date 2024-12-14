@@ -7,4 +7,4 @@ TESTS_DIR = ROOT_DIR / "tests"
 DATA_DIR = ROOT_DIR / "data"
 SRC_DIR = ROOT_DIR / "src"
 LOCAL_STAC_OUTPUT_DIR = Path.cwd() / "data" / "stac-catalog"
-LOCAL_DATA_DIR = Path.cwd() / "data"
+LOCAL_DATA_DIR = Path.cwd()

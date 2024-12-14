@@ -48,7 +48,7 @@ def spectral_index(data_dir: Path, index: str, output_dir: Path | None = None) -
         ),
     )
 
-    output_dir = output_dir or LOCAL_DATA_DIR / f"spectral-index-{index.lower()}"
+    output_dir = output_dir or LOCAL_DATA_DIR / "spectral-index"
     output_dir.mkdir(exist_ok=True, parents=True)
 
     local_stac = read_local_stac(data_dir)
