@@ -314,7 +314,6 @@ v2-cwl-wq:
 	make docker-build
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/tmp/ \
-		--tmpdir-prefix=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
@@ -334,7 +333,6 @@ v2-cwl-adv-wq:
 	make docker-build
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/tmp/ \
-		--tmpdir-prefix=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
@@ -347,6 +345,8 @@ v2-cwl-adv-wq:
 		--query_limit 2 \
 		--query_cloud_cover_min 0 \
 		--query_cloud_cover_max 100 \
+		--ndwi_index ndwi \
+		--reproject_ndwi EPSG:3857 \
 		--cya_index cya_cells \
 		--reproject_cya_epsg EPSG:3857 \
 		--doc_index doc \
@@ -354,12 +354,12 @@ v2-cwl-adv-wq:
 		--cdom_index cdom \
 		--reproject_cdom_epsg EPSG:3857
 
-.PHONY: v2-cwl-lc
-v2-cwl-lc:
+.PHONY: v2-cwl-lc-glc
+v2-cwl-lc-glc:
 	make docker-build
 	cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/lc/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/lc/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=./data/processed/cwl/lc-glc/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/lc-glc/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
  		./cwl_files/local/land-cover.cwl\#bright-colden-259 \
@@ -371,5 +371,23 @@ v2-cwl-lc:
 		--query_clip True \
 		--reproject_epsg EPSG:3857
 
+
+.PHONY: v2-cwl-lc-corine
+v2-cwl-lc-corine:
+	make docker-build
+	cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/lc-corine/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/lc-corine/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+ 		./cwl_files/local/land-cover.cwl\#bright-colden-259 \
+		--area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
+		--dataset clms-corine-lc \
+		--date_start 1992-01-01 \
+		--date_end 2018-12-31 \
+		--query_limit 2 \
+		--query_clip True \
+		--reproject_epsg EPSG:3857
+
 .PHONY: cwl-all
-v2-cwl-all: cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ndvi v2-cwl-ndvi-simple v2-cwl-ndvi-simple v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc
+cwl-all: docker-build cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ndvi v2-cwl-ndvi-simple v2-cwl-ndvi-simple v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc

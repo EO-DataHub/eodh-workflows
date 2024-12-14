@@ -5,11 +5,11 @@ import shutil
 from pathlib import Path
 
 import click
-import pystac
 from pystac import Asset, Catalog
 
 from src.consts.directories import LOCAL_DATA_DIR
 from src.utils.logging import get_logger
+from src.utils.stac import write_local_stac
 
 _logger = get_logger(__name__)
 
@@ -78,16 +78,16 @@ def merge_stac_catalogs(catalog1_path: Path, catalog2_path: Path, output_dir: Pa
     # Helper function to copy assets to the output directory
     def copy_asset(asset: Asset, item_id: str, output_base: Path) -> Asset:
         # Determine the destination directory for the asset
-        item_dir = output_base / "items" / item_id
+        item_dir = output_base / "source_data" / item_id
         item_dir.mkdir(exist_ok=True, parents=True)
 
         # Determine the new HREF and copy the file
-        asset_filename = Path(asset.href).name
-        new_href = item_dir / asset_filename
+        new_href = item_dir / Path(asset.href).name
         shutil.copy(asset.href, new_href)
 
         # Update the asset with the new HREF
-        return Asset(href=str(new_href), title=asset.title, media_type=asset.media_type)
+        asset.href = new_href.absolute().as_posix()
+        return asset
 
     # Index items in the second catalog for easier matching
     catalog2_items = {item.id: item for item in catalog2.get_items()}
@@ -126,8 +126,4 @@ def merge_stac_catalogs(catalog1_path: Path, catalog2_path: Path, output_dir: Pa
 
     # Save the merged catalog to the output path
     output_dir.mkdir(exist_ok=True, parents=True)
-    merged_catalog.make_all_asset_hrefs_relative()
-    merged_catalog.normalize_and_save(
-        root_href=output_dir.as_posix(),
-        catalog_type=pystac.CatalogType.SELF_CONTAINED,
-    )
+    write_local_stac(merged_catalog, output_dir, "EOPro Merged Catalog", "EOPro Merged Catalog")
