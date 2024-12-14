@@ -117,7 +117,7 @@ def calculate(
             index_raster = index_calculator.compute(
                 item=item,
                 bbox=geojson_to_polygon(aoi).bounds if clip == "True" else None,
-            )
+            ).rio.reproject(WGS84)
             raster_path = save_cog(arr=index_raster, asset_id=item.id, output_dir=output_dir, epsg=WGS84)
 
         vmin, vmax, _ = index_calculator.typical_range

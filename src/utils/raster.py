@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 import numpy as np
+import rioxarray  # noqa: F401
 import stackstac
 from matplotlib import cm
 from PIL import Image
@@ -64,10 +65,8 @@ def build_raster_array(
 
 def get_raster_bounds(xarr: xr.DataArray) -> Polygon:
     """Calculates bounds for the raster array."""
-    bbox = xarr.rio.bounds()
-    minx, miny, maxx, maxy = bbox
-
-    return box(minx, miny, maxx, maxy)
+    bbox = xarr.rio.reproject(WGS84).rio.bounds() if xarr.rio.crs.to_epsg() != WGS84 else xarr.rio.bounds()
+    return box(*bbox)
 
 
 def get_raster_polygon(xarr: xr.DataArray) -> Polygon:

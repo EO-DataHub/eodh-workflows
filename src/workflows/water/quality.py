@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import click
+import rioxarray  # noqa: F401
 from tqdm import tqdm
 
 from src.consts.crs import WGS84
@@ -128,7 +129,7 @@ def water_quality(  # noqa: PLR0914, RUF100
                 raster_arr=raster_arr,
                 rescale_factor=scale,
                 rescale_offset=offset,
-            )
+            ).rio.reproject(WGS84)
             raster_path = save_cog(
                 arr=index_raster,
                 asset_id=f"{item.id}_{index_calculator.name}",
