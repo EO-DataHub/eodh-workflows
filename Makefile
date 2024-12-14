@@ -198,7 +198,12 @@ docker-rebuild: docker-stop docker-rm docker-rmi docker-all
 
 .PHONY: cwl-ndvi  ## Runs Raster Calculator
 cwl-ndvi:
-	@cwltool ./cwl_files/local/raster-calculate-app.cwl\#raster-calculate \
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/rc-v1-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/rc-v1-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/raster-calculate-app.cwl\#raster-calculate \
 		--stac_collection sentinel-2-l2a \
 		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--date_start 2024-01-01T00:00:00Z \
@@ -209,7 +214,12 @@ cwl-ndvi:
 
 .PHONY: cwl-corinelc  ## Runs LULC Change with CORINE
 cwl-corinelc:
-	@cwltool ./cwl_files/local/summarize-classes-app.cwl\#land-cover-change \
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/lc-v1-corine/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/lc-v1-corine/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
 		--source clms-corinelc \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 		--date_start 2006-01-01T00:00:00Z \
@@ -217,7 +227,12 @@ cwl-corinelc:
 
 .PHONY: cwl-globallc  ## Runs LULC Change with ESA GLC
 cwl-globallc:
-	@cwltool ./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/lc-v1-glc/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/lc-v1-glc/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
 		--source esacci-globallc \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 		--date_start 2008-01-01T00:00:00Z \
@@ -225,7 +240,12 @@ cwl-globallc:
 
 .PHONY: cwl-water-bodies  ## Runs LULC Change with Water Bodies
 cwl-water-bodies:
-	@cwltool ./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/lc-v1-wb/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/lc-v1-wb/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
 		--source clms-water-bodies \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 		--date_start 2024-01-01T00:00:00Z \
@@ -233,7 +253,12 @@ cwl-water-bodies:
 
 .PHONY: cwl-water-quality  ## Runs Water Quality app
 cwl-water-quality:
-	@cwltool ./cwl_files/local/water-quality-app.cwl\#water-quality \
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/wq-v1/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/wq-v1/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/water-quality-app.cwl\#water-quality \
 		--stac_collection sentinel-2-l2a \
 		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--date_start 2024-01-01T00:00:00Z \
@@ -346,5 +371,5 @@ v2-cwl-lc:
 		--query_clip True \
 		--reproject_epsg EPSG:3857
 
-.PHONY: v2-cwl-all
-v2-cwl-all: v2-cwl-ndvi-simple v2-cwl-ndvi-simple v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc
+.PHONY: cwl-all
+v2-cwl-all: cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ndvi v2-cwl-ndvi-simple v2-cwl-ndvi-simple v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc
