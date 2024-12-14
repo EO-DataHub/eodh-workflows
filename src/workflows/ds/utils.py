@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 _logger = get_logger(__name__)
 
 N_WORKERS = 10
-THREADS_PER_WORKER = 1
+THREADS_PER_WORKER = 2
 DATASET_TO_CATALOGUE_LOOKUP = {
     "sentinel-2-l1c": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/earth-search-aws",
     "sentinel-2-l2a": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/earth-search-aws",
