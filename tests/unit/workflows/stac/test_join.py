@@ -70,13 +70,13 @@ def test_merge_stac_catalogs(tmp_path: Path) -> None:
     item1 = next(merged_catalog.get_items("item1"))
     assert "ndvi_asset" in item1.assets
     assert "evi_asset" in item1.assets
-    assert (output_path / "items/item1/ndvi1.txt").exists()
-    assert (output_path / "items/item1/evi1.txt").exists()
+    assert (output_path / "source_data/item1/ndvi1.txt").exists()
+    assert (output_path / "source_data/item1/evi1.txt").exists()
 
     item2 = next(merged_catalog.get_items("item2"))
     assert "ndvi_asset" in item2.assets
-    assert (output_path / "items/item2/ndvi2.txt").exists()
+    assert (output_path / "source_data/item2/ndvi2.txt").exists()
 
     item3 = next(merged_catalog.get_items("item3"))
     assert "evi_asset" in item3.assets
-    assert (output_path / "items/item3/evi3.txt").exists()
+    assert (output_path / "source_data/item3/evi3.txt").exists()
