@@ -19,6 +19,7 @@ from src.workflows.ds.utils import (
     DATASET_TO_COLLECTION_LOOKUP,
     download_search_results,
     download_sentinel_hub,
+    split_s2_ard_cogs_into_separate_assets,
 )
 
 _logger = get_logger(__name__)
@@ -240,6 +241,9 @@ def handle_s2_query(
         output_dir=output_dir,
         clip=clip == "True",
     )
+
+    if stac_collection == "sentinel2_ard":
+        split_s2_ard_cogs_into_separate_assets(downloaded)
 
     new_catalog = prepare_local_stac(
         items_paths=downloaded,

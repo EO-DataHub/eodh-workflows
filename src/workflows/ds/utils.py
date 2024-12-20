@@ -12,6 +12,7 @@ import rasterio
 import requests
 import rioxarray
 from distributed import Client as DistributedClient, LocalCluster
+from pystac import Item
 from rasterio.mask import mask
 from shapely.geometry import mapping, shape
 from tqdm import tqdm
@@ -20,11 +21,11 @@ from src import consts
 from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
 from src.utils.raster import save_cog_v2
+from src.utils.stac import prepare_stac_asset
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from pystac import Item
 
 _logger = get_logger(__name__)
 
@@ -316,3 +317,34 @@ def download_sentinel_hub(
         results.append(item_path)
 
     return results  # Return the complete dict of results
+
+
+def split_s2_ard_cogs_into_separate_assets(fps: Iterable[Path]) -> None:
+    for fp in fps:
+        item = Item.from_file(fp)
+        cog_asset = item.assets.pop("cog")
+        cog_fp = Path(cog_asset.href)
+        arr = rioxarray.open_rasterio(cog_fp)
+
+        for band, new_band_name in zip(
+            arr.band,
+            ["blue", "green", "red", "rededge1", "rededge2", "rededge3", "nir", "nir08", "swir16", "swir22"],
+        ):
+            new_asset_fp = cog_fp.parent / f"{new_band_name}.tif"
+            band_arr = arr.sel(band=band)
+            band_arr.rio.to_raster(new_asset_fp)
+            item.add_asset(
+                key=new_band_name,
+                asset=prepare_stac_asset(
+                    file_path=new_asset_fp,
+                    title=cog_asset.title,
+                    description=cog_asset.description,
+                    asset_extra_fields={
+                        "proj:shape": band_arr.shape,
+                        "proj:transform": band_arr.rio.transform(),
+                        "proj:epsg": band_arr.rio.crs.to_epsg(),
+                    },
+                ),
+            )
+            fp.write_text(json.dumps(item.to_dict(), indent=4, ensure_ascii=False), encoding="utf-8")
+        cog_fp.unlink()
