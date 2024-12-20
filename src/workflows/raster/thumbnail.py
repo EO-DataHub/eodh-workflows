@@ -12,6 +12,7 @@ from src.consts.directories import LOCAL_DATA_DIR
 from src.utils.logging import get_logger
 from src.utils.raster import (
     generate_thumbnail_as_grayscale_image,
+    generate_thumbnail_rgb,
     generate_thumbnail_with_continuous_colormap,
     generate_thumbnail_with_discrete_classes,
     image_to_base64,
@@ -77,6 +78,9 @@ def generate_thumbnail_for_stac_items(
 
         arr = rioxarray.open_rasterio(asset_dict["href"])
         thumb_fp = (asset_out_dir / f"{Path(asset_dict['href']).stem}_thumbnail.png").absolute()
+
+        if asset_key == "visual":
+            generate_thumbnail_rgb(arr, out_fp=thumb_fp)
 
         if "colormap" in asset_dict:
             cmap_details = asset_dict["colormap"]

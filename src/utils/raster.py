@@ -226,7 +226,7 @@ def generate_thumbnail_as_grayscale_image(
     out_fp.parent.mkdir(parents=True, exist_ok=True)
 
     # Reproject to the specified EPSG
-    data_reprojected = data.rio.reproject(f"EPSG:{epsg}")
+    data_reprojected = data.rio.reproject(f"EPSG:{epsg}").squeeze()
 
     # Normalize the data to range 0-255 for image representation
     data_min = np.nanquantile(data_reprojected.values, 0.02)
@@ -236,7 +236,7 @@ def generate_thumbnail_as_grayscale_image(
     data_normalized = data_normalized.clip(0, 255).astype(np.uint8)
 
     # Resize the DataArray to the specified thumbnail size
-    height, width = data.shape
+    height, width = data.shape[-2], data.shape[-1]
 
     # Calculate scaling factor to fit the longest axis to the thumbnail size
     scale_factor = thumbnail_size / max(width, height)
@@ -251,7 +251,39 @@ def generate_thumbnail_as_grayscale_image(
     )
 
     # Convert the resized data to a PIL Image and save as PNG
-    image = Image.fromarray(data_resized.values)
+    image = Image.fromarray(data_resized[0, :, :].data if len(data_resized.shape) == 3 else data_resized.data)  # noqa: PLR2004
+    image.save(out_fp.with_suffix(".png"))
+
+
+def generate_thumbnail_rgb(
+    data: xr.DataArray,
+    out_fp: Path,
+    thumbnail_size: int = 64,
+    epsg: int = PSEUDO_MERCATOR,
+) -> None:
+    # We assume the data is 3D raster of shape (channels, height, width)
+    out_fp.parent.mkdir(parents=True, exist_ok=True)
+
+    # Reproject to the specified EPSG
+    data_reprojected = data.rio.reproject(f"EPSG:{epsg}").squeeze()
+
+    # Resize the DataArray to the specified thumbnail size
+    _, height, width = data.shape
+
+    # Calculate scaling factor to fit the longest axis to the thumbnail size
+    scale_factor = thumbnail_size / max(width, height)
+    new_width = math.ceil(width * scale_factor)
+    new_height = math.ceil(height * scale_factor)
+
+    # Use rasterio to resample the image
+    data_resized = data_reprojected.rio.reproject(
+        data.rio.crs,
+        shape=(new_width, new_height),
+        resampling=Resampling.nearest,
+    )
+
+    # Convert the resized data to a PIL Image and save as PNG
+    image = Image.fromarray(np.rollaxis(data_resized.values, 0, 3))
     image.save(out_fp.with_suffix(".png"))
 
 
