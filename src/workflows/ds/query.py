@@ -241,14 +241,10 @@ def handle_s2_query(
         clip=clip == "True",
     )
 
-    aoi_polygon = geojson_to_polygon(json.dumps(aoi))
-
     new_catalog = prepare_local_stac(
         items_paths=downloaded,
         title=f"Downloaded {stac_collection}",
         description=f"Query for {date_start} - {date_end}",
-        spatial_extent=aoi_polygon.bounds,
-        temp_extent=(date_start, date_end),
     )
 
     new_catalog.normalize_hrefs(output_dir.as_posix())
@@ -294,8 +290,6 @@ def handle_esa_cci_glc_query(
         items_paths=downloaded,
         title="Downloaded esa-lccci-glcm",
         description=f"Query for {date_start} - {date_end}",
-        spatial_extent=aoi_polygon.bounds,
-        temp_extent=(date_start, date_end),
     )
 
     new_catalog.normalize_hrefs(output_dir.as_posix())
@@ -346,8 +340,6 @@ def handle_sh_query(
         items_paths=downloaded,
         title=f"Downloaded {stac_collection}",
         description=f"Query for {date_start} - {date_end}",
-        spatial_extent=aoi_polygon.bounds,
-        temp_extent=(date_start, date_end),
     )
 
     new_catalog.normalize_hrefs(output_dir.as_posix())
