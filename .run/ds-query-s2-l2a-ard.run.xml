@@ -25,7 +25,7 @@
       </ENTRIES>
     </EXTENSION>
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/workflows/eopro_entrypoint.py" />
-    <option name="PARAMETERS" value="ds query --stac_collection=sentinel-2-l2a-ard --area=&quot;{\&quot;type\&quot;: \&quot;Polygon\&quot;, \&quot;coordinates\&quot;: [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}&quot; --date_start=2023-06-03 --date_end=2023-08-15 --limit=5 --clip=True --cloud_cover_max=30 --output_dir=data/processed/eopro/ds-query/s2l2aard" />
+    <option name="PARAMETERS" value="ds query --stac_collection=sentinel-2-l2a-ard --area=&quot;{\&quot;type\&quot;: \&quot;Polygon\&quot;, \&quot;coordinates\&quot;: [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}&quot; --date_start=2023-01-03 --date_end=2023-08-15 --limit=4 --clip=True --cloud_cover_max=30 --output_dir=data/processed/eopro/ds-query/s2l2aard" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

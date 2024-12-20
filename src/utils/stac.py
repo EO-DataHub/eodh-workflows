@@ -123,6 +123,7 @@ def prepare_local_stac(
             item.links = []
             item.set_self_href(item_path.absolute().as_posix())
         catalog.add_item(item)
+        item_path.unlink()
 
     catalog.make_all_asset_hrefs_relative()
 
