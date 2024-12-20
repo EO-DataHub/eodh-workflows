@@ -290,7 +290,11 @@ def download_sentinel_hub(
 
         # Download assets in parallel using dask
         downloaded_path = _download_sh_item(
-            item=item, item_output_dir=item_output_dir, aoi=aoi, token=token, stac_collection=stac_collection
+            item=item,
+            item_output_dir=item_output_dir,
+            aoi=aoi,
+            token=token,
+            stac_collection=stac_collection,
         )
 
         # STAC in SentinelHub has no assets
@@ -308,8 +312,7 @@ def download_sentinel_hub(
 
         # Save JSON definition of the item
         item_path = item_output_dir / f"{item.id}.json"
-        with item_path.open("w", encoding="utf-8") as json_file:
-            json.dump(item_modified, json_file, indent=4, ensure_ascii=False)
+        item_path.write_text(json.dumps(item_modified, indent=4, ensure_ascii=False), encoding="utf-8")
         results.append(item_path)
 
     return results  # Return the complete dict of results

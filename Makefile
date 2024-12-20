@@ -203,7 +203,7 @@ cwl-ndvi:
 		--outdir=./data/processed/cwl/rc-v1-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/raster-calculate-app.cwl\#raster-calculate \
+		./cwl_files/local/eodh/raster-calculate-app.cwl\#raster-calculate \
 		--stac_collection sentinel-2-l2a \
 		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--date_start 2024-01-01T00:00:00Z \
@@ -219,7 +219,7 @@ cwl-corinelc:
 		--outdir=./data/processed/cwl/lc-v1-corine/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
+		./cwl_files/local/eodh/lulc-change-app.cwl\#land-cover-change \
 		--source clms-corinelc \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 		--date_start 2006-01-01T00:00:00Z \
@@ -232,7 +232,7 @@ cwl-globallc:
 		--outdir=./data/processed/cwl/lc-v1-glc/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
+		./cwl_files/local/eodh/lulc-change-app.cwl\#land-cover-change \
 		--source esacci-globallc \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 		--date_start 2008-01-01T00:00:00Z \
@@ -245,7 +245,7 @@ cwl-water-bodies:
 		--outdir=./data/processed/cwl/lc-v1-wb/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/lulc-change-app.cwl\#land-cover-change \
+		./cwl_files/local/eodh/lulc-change-app.cwl\#land-cover-change \
 		--source clms-water-bodies \
 		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
 		--date_start 2024-01-01T00:00:00Z \
@@ -258,7 +258,7 @@ cwl-water-quality:
 		--outdir=./data/processed/cwl/wq-v1/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/water-quality-app.cwl\#water-quality \
+		./cwl_files/local/eodh/water-quality-app.cwl\#water-quality \
 		--stac_collection sentinel-2-l2a \
 		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--date_start 2024-01-01T00:00:00Z \
@@ -270,14 +270,13 @@ cwl-water-quality:
 
 .PHONY: v2-cwl-ndvi-simple
 v2-cwl-ndvi-simple:
-	make docker-build
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
 		--tmpdir-prefix=./data/processed/cwl/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=./data/processed/cwl/ndvi-simple/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/simplest-ndvi.cwl\#useful-conch-220 \
+		./cwl_files/local/eopro/simplest-ndvi.cwl\#simplest-ndvi \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--dataset sentinel-2-l2a \
 		--date_start 2024-03-01 \
@@ -297,7 +296,7 @@ v2-cwl-ndvi-full:
 		--outdir=./data/processed/cwl/ndvi-full/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/ndvi-clip-reproject.cwl\#nosy-conch-601 \
+		./cwl_files/local/eopro/ndvi-clip-reproject.cwl\#ndvi-clip-repr \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--dataset sentinel-2-l2a \
 		--date_start 2024-03-01 \
@@ -311,13 +310,12 @@ v2-cwl-ndvi-full:
 
 .PHONY: v2-cwl-wq
 v2-cwl-wq:
-	make docker-build
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/water-quality.cwl\#spiffy-grouse-766 \
+		./cwl_files/local/eopro/water-quality.cwl\#water-quality-wf \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--dataset sentinel-2-l2a \
 		--date_start 2024-03-01 \
@@ -330,13 +328,12 @@ v2-cwl-wq:
 
 .PHONY: v2-cwl-adv-wq
 v2-cwl-adv-wq:
-	make docker-build
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/advanced-water-quality.cwl\#nosy-kit-266 \
+		./cwl_files/local/eopro/advanced-water-quality.cwl\#adv-wq \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--dataset sentinel-2-l2a \
 		--date_start 2024-03-01 \
@@ -356,13 +353,12 @@ v2-cwl-adv-wq:
 
 .PHONY: v2-cwl-lc-glc
 v2-cwl-lc-glc:
-	make docker-build
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/lc-glc/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=./data/processed/cwl/lc-glc/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
- 		./cwl_files/local/land-cover.cwl\#bright-colden-259 \
+ 		./cwl_files/local/eopro/land-cover.cwl\#lcc \
 		--area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
 		--dataset esa-lccci-glcm \
 		--date_start 1994-01-01 \
@@ -371,23 +367,44 @@ v2-cwl-lc-glc:
 		--query_clip True \
 		--reproject_epsg EPSG:3857
 
-
 .PHONY: v2-cwl-lc-corine
 v2-cwl-lc-corine:
-	make docker-build
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/lc-corine/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=./data/processed/cwl/lc-corine/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
- 		./cwl_files/local/land-cover.cwl\#bright-colden-259 \
-		--area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
+ 		./cwl_files/local/eopro/land-cover.cwl\#lcc \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[14.71116464777238,50.841106893082866],[15.07930529622954,50.841106893082866],[15.07930529622954,51.11754967134041],[14.71116464777238,51.11754967134041],[14.71116464777238,50.841106893082866]]]}" \
 		--dataset clms-corine-lc \
-		--date_start 1992-01-01 \
-		--date_end 2018-12-31 \
-		--query_limit 2 \
+		--date_start 1980-01-01 \
+		--date_end 2020-12-31 \
+		--query_limit 20 \
 		--query_clip True \
 		--reproject_epsg EPSG:3857
 
+.PHONY: v2-cwl-s2-thumb
+v2-cwl-s2-thumb:
+	cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/s2-thumb/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/s2-thumb/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+ 		./cwl_files/local/eopro/s2-thumb.cwl\#s2-thumb \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+		--dataset sentinel-2-l2a \
+		--date_start 2024-03-01 \
+		--date_end 2024-10-10 \
+		--query_clip True \
+		--query_limit 2 \
+		--query_cloud_cover_min 0 \
+		--query_cloud_cover_max 100
+
+.PHONY: cwl-v1
+cwl-v1: docker-build cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ndvi
+
+.PHONY: cwl-v2
+cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc v2-cwl-s2-thumb
+
 .PHONY: cwl-all
-cwl-all: docker-build cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ndvi v2-cwl-ndvi-simple v2-cwl-ndvi-simple v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc
+cwl-all: cwl-v1 cwl-v2
