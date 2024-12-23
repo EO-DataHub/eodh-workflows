@@ -10,13 +10,14 @@ import rioxarray
 from pystac_client import Client
 from tqdm import tqdm
 
-from src import consts
 from src.consts.crs import WGS84
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.consts.stac import SENTINEL_2_L2A_COLLECTION_NAME
 from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
 from src.utils.raster import generate_thumbnail_with_continuous_colormap, get_raster_bounds, image_to_base64, save_cog
 from src.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
+from src.workflows.ds.utils import DATASET_TO_CATALOGUE_LOOKUP, DATASET_TO_COLLECTION_LOOKUP
 from src.workflows.raster.indices import SPECTRAL_INDICES
 
 if TYPE_CHECKING:
@@ -25,7 +26,6 @@ if TYPE_CHECKING:
 warnings.filterwarnings("ignore", category=UserWarning, message="The argument 'infer_datetime_format'")
 
 _logger = get_logger(__name__)
-DATASET_TO_CATALOG_LOOKUP = {"sentinel-2-l2a": "supported-datasets/earth-search-aws"}
 
 
 @click.command(help="Calculate spectral index")
@@ -100,10 +100,6 @@ def calculate(
     )
 
     index_calculator = SPECTRAL_INDICES[index]
-    if stac_collection not in index_calculator.collection_assets_to_use:
-        msg = f"Calculating `{index}` index is not possible for STAC collection `{stac_collection}`"
-        raise ValueError(msg)
-
     output_items = []
     progress_bar = tqdm(sorted_items, desc="Processing items")
     for item in progress_bar:
@@ -175,26 +171,18 @@ def query_stac(
     stac_collection: str,
     limit: int | None = None,
 ) -> list[pystac.Item]:
-    if stac_collection not in consts.stac.STAC_COLLECTIONS:
+    if stac_collection != SENTINEL_2_L2A_COLLECTION_NAME:
         msg = (
             f"Unknown STAC collection provided: `{stac_collection}`. "
-            f"Available collections: {', '.join(consts.stac.STAC_COLLECTIONS)}"
+            f"Available collections: {', '.join({SENTINEL_2_L2A_COLLECTION_NAME})}"
         )
         raise ValueError(msg)
 
     # Connect to STAC API
-    catalog = Client.open(
-        f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/{DATASET_TO_CATALOG_LOOKUP[stac_collection]}"
-    )
+    catalog = Client.open(DATASET_TO_CATALOGUE_LOOKUP[stac_collection])
 
     # Define your search with CQL2 syntax
-    filter_spec = {
-        "op": "and",
-        "args": [
-            {"op": "s_intersects", "args": [{"property": "geometry"}, aoi_polygon]},
-            {"op": "=", "args": [{"property": "collection"}, stac_collection]},
-        ],
-    }
+    filter_spec = {"op": "s_intersects", "args": [{"property": "geometry"}, aoi_polygon]}
 
     if date_start:
         filter_spec["args"].append({"op": ">=", "args": [{"property": "datetime"}, date_start]})  # type: ignore[attr-defined]
@@ -202,7 +190,7 @@ def query_stac(
         filter_spec["args"].append({"op": "<=", "args": [{"property": "datetime"}, date_end]})  # type: ignore[attr-defined]
 
     search = catalog.search(
-        collections=[stac_collection],
+        collections=[DATASET_TO_COLLECTION_LOOKUP[stac_collection]],
         filter_lang="cql2-json",
         filter=filter_spec,
         max_items=limit,

@@ -18,9 +18,11 @@ PC_CATALOG_API_ENDPOINT = "https://planetarycomputer.microsoft.com/api/stac/v1"
 # EODH STAC API
 EODH_CATALOG_API_ENDPOINT = "https://test.eodatahub.org.uk/api/catalogue/stac"
 
+LOCAL_COLLECTION_NAME = "collection"
 SENTINEL_2_L2A_COLLECTION_NAME = "sentinel-2-l2a"
+SENTINEL_2_ARD_COLLECTION_NAME = "sentinel2_ard"
 
 STAC_COLLECTIONS = {
     SENTINEL_2_L2A_COLLECTION_NAME,
+    SENTINEL_2_ARD_COLLECTION_NAME,
 }
-LOCAL_COLLECTION_NAME = "collection"
