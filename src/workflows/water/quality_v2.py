@@ -59,7 +59,9 @@ def water_quality(data_dir: Path, output_dir: Path | None = None) -> None:
     for item in local_stac.get_items(recursive=True):
         raster_arr = prepare_data_array(
             item=item,
-            assets=["blue", "green", "red", "rededge1", "nir", "scl"],
+            assets=["blue", "green", "red", "rededge1", "nir", "scl"]
+            if "scl" in item.assets
+            else ["blue", "green", "red", "rededge1", "nir", "swir16"],
         )
         first_asset = next(iter(item.assets.values()))
         asset_dir = Path(first_asset.href).parent

@@ -268,7 +268,7 @@ cwl-water-quality:
 
 # CWL V2 commands
 
-.PHONY: v2-cwl-ndvi-simple
+.PHONY: v2-cwl-ndvi-simple  ## Runs Simple NDVI WF (V2)
 v2-cwl-ndvi-simple:
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
@@ -287,7 +287,7 @@ v2-cwl-ndvi-simple:
 		--query_cloud_cover_max 100 \
 		--ndvi_index ndvi
 
-.PHONY: v2-cwl-ndvi-full
+.PHONY: v2-cwl-ndvi-full  ## Runs Full NDVI WF (V2)
 v2-cwl-ndvi-full:
 	make docker-build
 	cwltool \
@@ -308,7 +308,7 @@ v2-cwl-ndvi-full:
 		--ndvi_index ndvi \
 		--reproject_epsg EPSG:3857
 
-.PHONY: v2-cwl-wq
+.PHONY: v2-cwl-wq  ## Runs WQ WF (V2)
 v2-cwl-wq:
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/tmp/ \
@@ -326,7 +326,7 @@ v2-cwl-wq:
 		--query_cloud_cover_max 100 \
 		--reproject_epsg EPSG:3857
 
-.PHONY: v2-cwl-adv-wq
+.PHONY: v2-cwl-adv-wq  ## Runs Advanced WQ WF (V2)
 v2-cwl-adv-wq:
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/tmp/ \
@@ -351,7 +351,7 @@ v2-cwl-adv-wq:
 		--cdom_index cdom \
 		--reproject_cdom_epsg EPSG:3857
 
-.PHONY: v2-cwl-lc-glc
+.PHONY: v2-cwl-lc-glc  ## Runs LCC GLC WF (V2)
 v2-cwl-lc-glc:
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/lc-glc/$(shell date --iso-8601=minutes)/tmp/ \
@@ -367,7 +367,7 @@ v2-cwl-lc-glc:
 		--query_clip True \
 		--reproject_epsg EPSG:3857
 
-.PHONY: v2-cwl-lc-corine
+.PHONY: v2-cwl-lc-corine  ## Runs LCC Corine WF (V2)
 v2-cwl-lc-corine:
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/lc-corine/$(shell date --iso-8601=minutes)/tmp/ \
@@ -383,7 +383,7 @@ v2-cwl-lc-corine:
 		--query_clip True \
 		--reproject_epsg EPSG:3857
 
-.PHONY: v2-cwl-s2-thumb
+.PHONY: v2-cwl-s2-thumb  ## Runs S2 Thumbnail WF (V2)
 v2-cwl-s2-thumb:
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/s2-thumb/$(shell date --iso-8601=minutes)/tmp/ \
@@ -400,11 +400,49 @@ v2-cwl-s2-thumb:
 		--query_cloud_cover_min 0 \
 		--query_cloud_cover_max 100
 
+.PHONY: v2-cwl-s2ard-ndvi  ## Runs NDVI S2 ARD WF (V2)
+v2-cwl-s2ard-ndvi:
+	cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/ndvi-full-adr/$(shell date --iso-8601=minutes)/tmp/ \
+		--tmpdir-prefix=./data/processed/cwl/ndvi-full-adr/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/ndvi-full-adr/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/eopro/ndvi-clip-reproject.cwl\#ndvi-clip-repr \
+		--area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
+		--dataset sentinel-2-l2a-ard \
+		--date_start 2023-01-01 \
+		--date_end 2024-10-10 \
+		--query_clip True \
+		--query_limit 2 \
+		--query_cloud_cover_min 0 \
+		--query_cloud_cover_max 100 \
+		--ndvi_index ndvi \
+		--reproject_epsg EPSG:3857
+
+.PHONY: v2-cwl-s2ard-wq  ## Runs WQ S2 ARD WF (V2)
+v2-cwl-s2ard-wq:
+	cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/wq-adr/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/wq-adr/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/eopro/water-quality.cwl\#water-quality-wf \
+		--area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
+		--dataset sentinel-2-l2a-ard \
+		--date_start 2023-01-01 \
+		--date_end 2024-10-10 \
+		--query_clip True \
+		--query_limit 2 \
+		--query_cloud_cover_min 0 \
+		--query_cloud_cover_max 100 \
+		--reproject_epsg EPSG:3857
+
 .PHONY: cwl-v1
-cwl-v1: docker-build cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ndvi
+cwl-v1: docker-build cwl-ndvi cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality
 
 .PHONY: cwl-v2
-cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc v2-cwl-s2-thumb
+cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc v2-cwl-s2-thumb v2-cwl-s2ard-ndvi v2-cwl-s2ard-wq
 
 .PHONY: cwl-all
 cwl-all: cwl-v1 cwl-v2

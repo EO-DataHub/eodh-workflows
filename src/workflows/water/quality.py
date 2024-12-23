@@ -118,13 +118,6 @@ def water_quality(  # noqa: PLR0914, RUF100
             Turbidity(),
         ]:
             _logger.info("Calculating %s index for item %s", index_calculator.full_name, item.id)
-            if stac_collection not in index_calculator.collection_assets_to_use:
-                msg = (
-                    f"Calculating `{index_calculator.name}` index is not possible "
-                    f"for STAC collection `{stac_collection}`"
-                )
-                raise ValueError(msg)
-
             index_raster = index_calculator.calculate_index(
                 raster_arr=raster_arr,
                 rescale_factor=scale,

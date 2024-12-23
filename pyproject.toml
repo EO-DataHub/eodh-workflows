@@ -211,6 +211,7 @@ module = [
     "rasterio.*",
     "rioxarray.*",
     "shapely.*",
+    "skimage.*",
     "stackstac.*",
     "xarray.*",
     "xrspatial.*",
