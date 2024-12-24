@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     import xarray as xr
     from pystac import Item
 
-    from src.workflows.lulc.helpers import DataSource
+    from src.workflows.legacy.lulc.helpers import DataSource
 
 _logger = get_logger(__name__)
 

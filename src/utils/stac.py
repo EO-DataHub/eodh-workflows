@@ -35,9 +35,6 @@ def generate_stac(
 ) -> None:
     catalog = pystac.Catalog(id="catalog", title=title, description=description, href=output_dir.as_posix())
 
-    # Adding a collection is not supported by ADES
-    # https://github.com/EO-DataHub/platform-bugs/issues/31
-
     for item in items:
         catalog.add_item(item)
 

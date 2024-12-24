@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="evi" type="PythonConfigurationType" factoryName="Python" folderName="eodh">
+  <configuration default="false" name="raster-clip-s2" type="PythonConfigurationType" factoryName="Python" folderName="eodh">
     <module name="eodh-workflows" />
     <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
@@ -25,7 +25,7 @@
       </ENTRIES>
     </EXTENSION>
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/workflows/entrypoint.py" />
-    <option name="PARAMETERS" value="raster calculate --stac_collection=sentinel-2-l2a --aoi=&quot;{\&quot;type\&quot;:\&quot;Polygon\&quot;,\&quot;coordinates\&quot;:[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}&quot; --date_start=2024-01-03 --date_end=2024-08-01 --index=evi --output_dir=data/processed/evi --limit=1 --clip=True" />
+    <option name="PARAMETERS" value="raster clip --stac_item_spec=data/processed/raster-calculate/outputs/S2A_MSIL2A_20240901T100031_R122_T33UVS_20240901T152250.json --raster=data/processed/raster-calculate/outputs/S2A_MSIL2A_20240901T100031_R122_T33UVS_20240901T152250.tif --aoi=&quot;{\&quot;type\&quot;:\&quot;MultiPolygon\&quot;,\&quot;coordinates\&quot;:[[[[14.898945373329379,50.880263263046096],[14.872173344124963,50.888433380175378],[14.860468363914659,50.893146257566649],[14.851751889289963,50.899193751570706],[14.85100476289356,50.906496820673375],[14.858476026857582,50.912778114130944],[14.868313191076879,50.915996948510198],[14.876033497173044,50.92439627254322],[14.886368745656608,50.931852345662328],[14.912642690596753,50.932244737457609],[14.928705908119408,50.926280024894041],[14.935554566753098,50.91882305855497],[14.928830429185478,50.915211887482066],[14.924596712939197,50.913798744257306],[14.927709739590874,50.912464069589127],[14.927211655326603,50.911678948963861],[14.92272889694819,50.910108667981142],[14.923226981212453,50.909244990859385],[14.944769125642061,50.900214679566382],[14.941158014726115,50.897701585773028],[14.925468360401663,50.894245860344043],[14.914759548719896,50.88827627604973],[14.898945373329379,50.880263263046096]]]]}&quot; --output_dir=data/processed/eodh/clip/outputs" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

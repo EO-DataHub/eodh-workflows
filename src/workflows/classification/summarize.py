@@ -15,7 +15,7 @@ from src.utils.geom import calculate_geodesic_area
 from src.utils.logging import get_logger
 from src.utils.raster import get_raster_polygon, save_cog_v2
 from src.utils.stac import read_local_stac, write_local_stac
-from src.workflows.lulc.helpers import get_classes
+from src.workflows.legacy.lulc.helpers import get_classes
 
 if TYPE_CHECKING:
     import xarray

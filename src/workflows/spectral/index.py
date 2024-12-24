@@ -10,7 +10,7 @@ from src.consts.directories import LOCAL_DATA_DIR
 from src.utils.logging import get_logger
 from src.utils.raster import save_cog
 from src.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, read_local_stac
-from src.workflows.raster.indices import SPECTRAL_INDICES
+from src.workflows.spectral.indices import SPECTRAL_INDICES
 
 _logger = get_logger(__name__)
 

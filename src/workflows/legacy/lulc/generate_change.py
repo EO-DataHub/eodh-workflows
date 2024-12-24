@@ -25,7 +25,7 @@ from src.utils.raster import (
 )
 from src.utils.sentinel_hub import sh_auth_token
 from src.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
-from src.workflows.lulc.helpers import DATASOURCE_LOOKUP, DataSource, get_classes, get_classes_orig_dict
+from src.workflows.legacy.lulc.helpers import DATASOURCE_LOOKUP, DataSource, get_classes, get_classes_orig_dict
 
 if TYPE_CHECKING:
     import xarray
@@ -49,7 +49,7 @@ _logger = get_logger(__name__)
     type=click.Path(path_type=Path),  # type: ignore[type-var]
     help="Path to the output directory - will create new dir in CWD if not provided",
 )
-def generate_lulc_change(
+def generate_lulc_change(  # noqa: PLR0914, RUF100
     source: str,
     aoi: str,
     date_start: str,
