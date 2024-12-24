@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import click
 
-from src.workflows.lulc.generate_change import generate_lulc_change
-from src.workflows.raster.calculator import calculate
-from src.workflows.raster.clip import clip
-from src.workflows.water.quality import water_quality
+from src.workflows.legacy.lulc.generate_change import generate_lulc_change
+from src.workflows.legacy.raster.calculator import calculate
+from src.workflows.legacy.raster.clip import clip
+from src.workflows.legacy.water.quality import water_quality
 
 
 @click.group()

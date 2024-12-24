@@ -4,12 +4,12 @@ import click
 
 from src.workflows.classification.summarize import summarize_classes
 from src.workflows.ds.query import query
-from src.workflows.raster.clip_v2 import clip_stac_items
+from src.workflows.raster.clip import clip_stac_items
 from src.workflows.raster.reproject import reproject_stac_items
 from src.workflows.raster.thumbnail import generate_thumbnail_for_stac_items
 from src.workflows.spectral.index import spectral_index
 from src.workflows.stac.join import join
-from src.workflows.water.quality_v2 import water_quality
+from src.workflows.water.quality import water_quality
 
 
 @click.group()

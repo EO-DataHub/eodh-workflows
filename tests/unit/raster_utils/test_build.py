@@ -8,7 +8,7 @@ from pystac import Item
 
 from src import consts
 from src.utils.raster import build_raster_array
-from src.workflows.lulc.helpers import DATASOURCE_LOOKUP, DataSource
+from src.workflows.legacy.lulc.helpers import DATASOURCE_LOOKUP, DataSource
 
 
 @pytest.fixture

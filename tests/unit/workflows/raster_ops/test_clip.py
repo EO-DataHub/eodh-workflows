@@ -15,7 +15,7 @@ from shapely.geometry.polygon import Polygon
 from shapely.ops import transform
 
 from src.utils.logging import get_logger
-from src.workflows.raster.clip import clip_raster
+from src.workflows.legacy.raster.clip import clip_raster
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -212,6 +212,38 @@ cwl-ndvi:
 		--index=$(INDEX) \
 		--clip=True
 
+.PHONY: cwl-ard-ndvi  ## Runs Raster Calculator with S2 ARD
+cwl-ard-ndvi:
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/rc-v1-ard-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/rc-v1-ard-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/eodh/raster-calculate-app.cwl\#raster-calculate \
+		--stac_collection sentinel-2-l2a-ard \
+		--aoi "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
+		--date_start 2023-01-01T00:00:00Z \
+		--date_end 2024-12-31T23:59:59Z \
+		--limit=2 \
+		--index=$(INDEX) \
+		--clip=True
+
+.PHONY: cwl-ard-doc  ## Runs Raster Calculator with S2 ARD
+cwl-ard-doc:
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/rc-v1-ard-doc/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/rc-v1-ard-doc/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/eodh/raster-calculate-app.cwl\#raster-calculate \
+		--stac_collection sentinel-2-l2a-ard \
+		--aoi "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
+		--date_start 2023-01-01T00:00:00Z \
+		--date_end 2024-12-31T23:59:59Z \
+		--limit=2 \
+		--index=doc \
+		--clip=True
+
 .PHONY: cwl-corinelc  ## Runs LULC Change with CORINE
 cwl-corinelc:
 	@cwltool \
@@ -262,6 +294,21 @@ cwl-water-quality:
 		--stac_collection sentinel-2-l2a \
 		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
 		--date_start 2024-01-01T00:00:00Z \
+		--date_end 2024-12-31T23:59:59Z \
+		--limit=2 \
+		--clip=True
+
+.PHONY: cwl-ard-wq  ## Runs Water Quality app with S2 ARD
+cwl-ard-wq:
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/wq-v1-ard/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/wq-v1-ard/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/eodh/water-quality-app.cwl\#water-quality \
+		--stac_collection sentinel-2-l2a-ard \
+		--aoi "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
+		--date_start 2023-01-01T00:00:00Z \
 		--date_end 2024-12-31T23:59:59Z \
 		--limit=2 \
 		--clip=True
@@ -404,7 +451,6 @@ v2-cwl-s2-thumb:
 v2-cwl-s2ard-ndvi:
 	cwltool \
 		--tmp-outdir-prefix=./data/processed/cwl/ndvi-full-adr/$(shell date --iso-8601=minutes)/tmp/ \
-		--tmpdir-prefix=./data/processed/cwl/ndvi-full-adr/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=./data/processed/cwl/ndvi-full-adr/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
@@ -428,7 +474,7 @@ v2-cwl-s2ard-wq:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/local/eopro/water-quality.cwl\#water-quality-wf \
-		--area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.5962507170463245,55.15651250330746],[-2.4458753508353874,55.15651250330746],[-2.4458753508353874,55.23019781679735],[-2.5962507170463245,55.23019781679735],[-2.5962507170463245,55.15651250330746]]]}" \
 		--dataset sentinel-2-l2a-ard \
 		--date_start 2023-01-01 \
 		--date_end 2024-10-10 \
@@ -439,7 +485,7 @@ v2-cwl-s2ard-wq:
 		--reproject_epsg EPSG:3857
 
 .PHONY: cwl-v1
-cwl-v1: docker-build cwl-ndvi cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality
+cwl-v1: docker-build cwl-ndvi cwl-ard-ndvi cwl-ard-doc cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ard-wq
 
 .PHONY: cwl-v2
 cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc v2-cwl-s2-thumb v2-cwl-s2ard-ndvi v2-cwl-s2ard-wq

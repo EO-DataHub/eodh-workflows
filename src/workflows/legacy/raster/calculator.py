@@ -6,19 +6,22 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 import click
-import rioxarray
 from pystac_client import Client
 from tqdm import tqdm
 
 from src.consts.crs import WGS84
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
-from src.consts.stac import SENTINEL_2_L2A_COLLECTION_NAME
 from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
 from src.utils.raster import generate_thumbnail_with_continuous_colormap, get_raster_bounds, image_to_base64, save_cog
 from src.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
 from src.workflows.ds.utils import DATASET_TO_CATALOGUE_LOOKUP, DATASET_TO_COLLECTION_LOOKUP
-from src.workflows.raster.indices import SPECTRAL_INDICES
+from src.workflows.spectral.indices import (
+    SPECTRAL_INDICES,
+    prepare_data_array,
+    prepare_s2_ard_data_array,
+    resolve_rescale_params,
+)
 
 if TYPE_CHECKING:
     import pystac
@@ -59,7 +62,7 @@ _logger = get_logger(__name__)
     type=click.Path(path_type=Path),  # type: ignore[type-var]
     help="Path to the output directory - will create new dir in CWD if not provided",
 )
-def calculate(
+def calculate(  # noqa: PLR0914, RUF100
     stac_collection: str,
     aoi: str,
     date_start: str,
@@ -104,17 +107,25 @@ def calculate(
     progress_bar = tqdm(sorted_items, desc="Processing items")
     for item in progress_bar:
         progress_bar.set_description(f"Working with: {item.id}")
-
-        raster_path = output_dir / f"{item.id}_{index_calculator.name}.tif"
-        if raster_path.exists():
-            _logger.info("%s already exists. Loading....", raster_path.as_posix())
-            index_raster = rioxarray.open_rasterio(raster_path)
-        else:
-            index_raster = index_calculator.compute(
+        raster_arr = (
+            prepare_data_array(
                 item=item,
                 bbox=geojson_to_polygon(aoi).bounds if clip == "True" else None,
-            ).rio.reproject(WGS84)
-            raster_path = save_cog(arr=index_raster, asset_id=item.id, output_dir=output_dir, epsg=WGS84)
+                assets=["blue", "green", "red", "rededge1", "nir", "scl"],
+            )
+            if stac_collection == "sentinel-2-l2a"
+            else prepare_s2_ard_data_array(
+                item=item,
+                aoi=aoi_polygon if clip == "True" else None,
+            )
+        )
+        scale, offset = resolve_rescale_params(collection_name=item.collection_id, item_datetime=item.datetime)
+        index_raster = index_calculator.calculate_index(
+            raster_arr=raster_arr,
+            rescale_factor=scale,
+            rescale_offset=offset,
+        ).rio.reproject(WGS84)
+        raster_path = save_cog(arr=index_raster, asset_id=item.id, output_dir=output_dir, epsg=WGS84)
 
         vmin, vmax, _ = index_calculator.typical_range
         mpl_cmap, _ = index_calculator.mpl_colormap
@@ -171,10 +182,11 @@ def query_stac(
     stac_collection: str,
     limit: int | None = None,
 ) -> list[pystac.Item]:
-    if stac_collection != SENTINEL_2_L2A_COLLECTION_NAME:
+    valid_collections = {"sentinel-2-l2a", "sentinel-2-l2a-ard"}
+    if stac_collection not in valid_collections:
         msg = (
             f"Unknown STAC collection provided: `{stac_collection}`. "
-            f"Available collections: {', '.join({SENTINEL_2_L2A_COLLECTION_NAME})}"
+            f"Available collections: {', '.join(valid_collections)}"
         )
         raise ValueError(msg)
 

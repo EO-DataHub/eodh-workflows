@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="lulc-change-global" type="PythonConfigurationType" factoryName="Python" folderName="eodh">
+  <configuration default="false" name="raster-calc-cya-s2" type="PythonConfigurationType" factoryName="Python" folderName="eodh">
     <module name="eodh-workflows" />
     <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
@@ -25,7 +25,7 @@
       </ENTRIES>
     </EXTENSION>
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/workflows/entrypoint.py" />
-    <option name="PARAMETERS" value="lulc change --source=esacci-globallc --aoi=&quot;{\&quot;type\&quot;:\&quot;Polygon\&quot;,\&quot;coordinates\&quot;:[[[-0.511790994620525,51.44563991163383],[-0.511790994620525,51.49698965309361],[-0.408954489023431,51.49698965309361],[-0.408954489023431,51.44563991163383],[-0.511790994620525,51.44563991163383]]]}&quot; --date_start=1992-01-01 --date_end=2018-12-31 --output_dir=data/processed/eodh/esacci-globallc" />
+    <option name="PARAMETERS" value="raster calculate --stac_collection=sentinel-2-l2a --aoi=&quot;{\&quot;type\&quot;:\&quot;Polygon\&quot;,\&quot;coordinates\&quot;:[[[71.57675987813407,4.478117644387506],[71.96058408252355,4.478117644387506],[71.96058408252355,4.623565004737548],[71.57675987813407,4.623565004737548],[71.57675987813407,4.478117644387506]]]}&quot; --date_start=2024-01-03 --date_end=2024-08-01 --index=cya --limit=5 --clip=True --output_dir=data/processed/eodh/cya" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
