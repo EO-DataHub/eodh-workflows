@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import tempfile
 from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
@@ -8,9 +9,11 @@ from typing import TYPE_CHECKING, Any, Iterable
 import dask.bag
 import dask.config
 import geopandas as gpd
+import pystac
 import rasterio
 import requests
 import rioxarray
+import stackstac
 from distributed import Client as DistributedClient, LocalCluster
 from pystac import Item
 from rasterio.mask import mask
@@ -18,6 +21,7 @@ from shapely.geometry import mapping, shape
 from tqdm import tqdm
 
 from src import consts
+from src.consts.stac import LOCAL_COLLECTION_NAME, SENTINEL_2_ARD_COLLECTION_NAME, SENTINEL_2_L2A_COLLECTION_NAME
 from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
 from src.utils.raster import save_cog_v2
@@ -25,6 +29,8 @@ from src.utils.stac import prepare_stac_asset
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    import xarray
 
 
 _logger = get_logger(__name__)
@@ -348,3 +354,119 @@ def split_s2_ard_cogs_into_separate_assets(fps: Iterable[Path]) -> None:
             )
             fp.write_text(json.dumps(item.to_dict(), indent=4, ensure_ascii=False), encoding="utf-8")
         cog_fp.unlink()
+
+
+def prepare_data_array(
+    item: pystac.Item,
+    assets: list[str],
+    bbox: tuple[float, float, float, float] | None = None,
+) -> xarray.DataArray:
+    mapped_asset_ids = unify_asset_identifiers(assets_to_use=assets, collection=item.collection_id)
+
+    epsg: int | None = None
+    if not all(item.assets[a].extra_fields.get("proj:epsg", None) for a in assets):
+        epsg = item.properties.get("proj:epsg", None)
+
+    return (
+        stackstac.stack(
+            [item],
+            assets=assets,
+            chunksize=consts.compute.CHUNK_SIZE,
+            bounds_latlon=bbox,
+            epsg=epsg,
+        )
+        .assign_coords({"band": mapped_asset_ids})  # use common names
+        .squeeze()
+        .compute()
+    )
+
+
+def prepare_s2_ard_data_array(
+    item: pystac.Item,
+    aoi: dict[str, Any] | None = None,
+) -> xarray.DataArray:
+    if aoi is None:
+        return _prepare_s2_ard_data_array_no_clip(item)
+    return _prepare_s2_ard_data_array_clip(item, aoi)
+
+
+def _prepare_s2_ard_data_array_clip(item: pystac.Item, aoi: dict[str, Any]) -> xarray.DataArray:
+    # Load AOI geometry
+    aoi_geometry = shape(aoi)
+    geo = gpd.GeoDataFrame({"geometry": aoi_geometry}, index=[0], crs="EPSG:4326")
+    asset = item.assets["cog"]
+
+    # Use Rasterio to open the remote GeoTIFF
+    src: rasterio.io.DatasetReader
+    with rasterio.open(asset.href) as src:
+        geo = geo.to_crs(src.crs)
+        aoi_geom = get_features_geometry(geo)
+        data, out_transform = mask(dataset=src, shapes=aoi_geom, all_touched=True, crop=True)
+        out_meta = src.meta.copy()
+
+    # Update metadata
+    out_meta.update({
+        "driver": "GTiff",
+        "height": data.shape[-2],
+        "width": data.shape[-1],
+        "transform": out_transform,
+        "crs": src.crs,
+    })
+
+    # Save clipped raster
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        dest: rasterio.io.DatasetWriter
+        with rasterio.open(Path(tmpdir_name) / "cog.tif", "w", **out_meta) as dest:
+            dest.write(data)
+        return (
+            rioxarray.open_rasterio(Path(tmpdir_name) / "cog.tif")
+            .compute()
+            .assign_coords({
+                "band": [
+                    "blue",
+                    "green",
+                    "red",
+                    "rededge1",
+                    "rededge2",
+                    "rededge3",
+                    "nir",
+                    "nir08",
+                    "swir16",
+                    "swir22",
+                ]
+            })
+            .rio.reproject("EPSG:4326")
+        )
+
+
+def _prepare_s2_ard_data_array_no_clip(item: pystac.Item) -> xarray.DataArray:
+    asset = item.assets["cog"]
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        download_asset(asset=asset.to_dict(), output_path=Path(tmpdir_name) / "cog.tif")
+        return (
+            rioxarray.open_rasterio(Path(tmpdir_name) / "cog.tif")
+            .compute()
+            .assign_coords({
+                "band": [
+                    "blue",
+                    "green",
+                    "red",
+                    "rededge1",
+                    "rededge2",
+                    "rededge3",
+                    "nir",
+                    "nir08",
+                    "swir16",
+                    "swir22",
+                ]
+            })
+            .rio.reproject("EPSG:4326")
+        )
+
+
+def unify_asset_identifiers(assets_to_use: list[str], collection: str) -> list[str]:
+    if collection in {SENTINEL_2_L2A_COLLECTION_NAME, LOCAL_COLLECTION_NAME, SENTINEL_2_ARD_COLLECTION_NAME}:
+        return assets_to_use
+
+    msg = f"Unknown collection: {collection}. Cannot resolve asset identifiers to use."
+    raise ValueError(msg)

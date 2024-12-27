@@ -1,27 +1,17 @@
 from __future__ import annotations
 
 import abc
-import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import geopandas as gpd
 import numpy as np
-import rasterio
-import rioxarray
-import stackstac
 import xarray
-from rasterio.mask import mask
-from shapely.geometry.geo import shape
 from skimage.morphology import closing, erosion, square
 from xrspatial.multispectral import evi, ndvi, savi
 
-from src import consts
 from src.consts.compute import EPS
-from src.consts.stac import LOCAL_COLLECTION_NAME, SENTINEL_2_ARD_COLLECTION_NAME, SENTINEL_2_L2A_COLLECTION_NAME
 from src.utils.logging import get_logger
-from src.workflows.ds.utils import get_features_geometry
+from src.workflows.ds.utils import prepare_data_array
 
 if TYPE_CHECKING:
     import pystac
@@ -47,13 +37,6 @@ EARTH_SEARCH_AWS_ASSET_LOOKUP = {
     "swir22": "B12",
     "scl": "SCL",
 }
-PLANETARY_COMPUTER_ASSET_LOOKUP = {v: k for k, v in EARTH_SEARCH_AWS_ASSET_LOOKUP.items()}
-
-
-def unify_asset_identifiers(assets_to_use: list[str], collection: str) -> list[str]:
-    if collection in {SENTINEL_2_L2A_COLLECTION_NAME, LOCAL_COLLECTION_NAME, SENTINEL_2_ARD_COLLECTION_NAME}:
-        return assets_to_use
-    return [PLANETARY_COMPUTER_ASSET_LOOKUP[a] for a in assets_to_use]
 
 
 def rescale(data: xarray.DataArray, scale: float = 1e-4, offset: float = -0.1) -> xarray.DataArray:
@@ -392,83 +375,6 @@ def doc(
         attrs=red_agg.attrs,
     )
     return result_arr.where(water_mask).rio.write_crs(crs)
-
-
-def prepare_data_array(
-    item: pystac.Item,
-    assets: list[str],
-    bbox: tuple[float, float, float, float] | None = None,
-) -> xarray.DataArray:
-    mapped_asset_ids = unify_asset_identifiers(assets_to_use=assets, collection=item.collection_id)
-
-    epsg: int | None = None
-    if not all(item.assets[a].extra_fields.get("proj:epsg", None) for a in assets):
-        epsg = item.properties.get("proj:epsg", None)
-
-    return (
-        stackstac.stack(
-            [item],
-            assets=assets,
-            chunksize=consts.compute.CHUNK_SIZE,
-            bounds_latlon=bbox,
-            epsg=epsg,
-        )
-        .assign_coords({"band": mapped_asset_ids})  # use common names
-        .squeeze()
-        .compute()
-    )
-
-
-def prepare_s2_ard_data_array(
-    item: pystac.Item,
-    aoi: dict[str, Any] | None = None,
-) -> xarray.DataArray:
-    # Load AOI geometry
-    aoi_geometry = shape(aoi)
-    geo = gpd.GeoDataFrame({"geometry": aoi_geometry}, index=[0], crs="EPSG:4326")
-    asset = item.assets["cog"]
-
-    # Use Rasterio to open the remote GeoTIFF
-    src: rasterio.io.DatasetReader
-    with rasterio.open(asset.href) as src:
-        geo = geo.to_crs(src.crs)
-        aoi_geom = get_features_geometry(geo)
-        data, out_transform = mask(dataset=src, shapes=aoi_geom, all_touched=True, crop=True)
-        out_meta = src.meta.copy()
-
-    # Update metadata
-    out_meta.update({
-        "driver": "GTiff",
-        "height": data.shape[-2],
-        "width": data.shape[-1],
-        "transform": out_transform,
-        "crs": src.crs,
-    })
-
-    # Save clipped raster
-    with tempfile.TemporaryDirectory() as tmpdir_name:
-        dest: rasterio.io.DatasetWriter
-        with rasterio.open(Path(tmpdir_name) / "cog.tif", "w", **out_meta) as dest:
-            dest.write(data)
-        return (
-            rioxarray.open_rasterio(Path(tmpdir_name) / "cog.tif")
-            .compute()
-            .assign_coords({
-                "band": [
-                    "blue",
-                    "green",
-                    "red",
-                    "rededge1",
-                    "rededge2",
-                    "rededge3",
-                    "nir",
-                    "nir08",
-                    "swir16",
-                    "swir22",
-                ]
-            })
-            .rio.reproject("EPSG:4326")
-        )
 
 
 def resolve_rescale_params(collection_name: str, item_datetime: datetime) -> tuple[float, float]:
