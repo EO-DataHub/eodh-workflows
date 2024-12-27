@@ -15,11 +15,14 @@ from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
 from src.utils.raster import generate_thumbnail_with_continuous_colormap, get_raster_bounds, image_to_base64, save_cog
 from src.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
-from src.workflows.ds.utils import DATASET_TO_CATALOGUE_LOOKUP, DATASET_TO_COLLECTION_LOOKUP
-from src.workflows.spectral.indices import (
-    SPECTRAL_INDICES,
+from src.workflows.ds.utils import (
+    DATASET_TO_CATALOGUE_LOOKUP,
+    DATASET_TO_COLLECTION_LOOKUP,
     prepare_data_array,
     prepare_s2_ard_data_array,
+)
+from src.workflows.spectral.indices import (
+    SPECTRAL_INDICES,
     resolve_rescale_params,
 )
 
@@ -104,9 +107,8 @@ def calculate(  # noqa: PLR0914, RUF100
 
     index_calculator = SPECTRAL_INDICES[index]
     output_items = []
-    progress_bar = tqdm(sorted_items, desc="Processing items")
-    for item in progress_bar:
-        progress_bar.set_description(f"Working with: {item.id}")
+    for item in tqdm(sorted_items, desc="Processing items"):
+        _logger.info("Working with: %s", item.id)
         raster_arr = (
             prepare_data_array(
                 item=item,
@@ -167,6 +169,7 @@ def calculate(  # noqa: PLR0914, RUF100
                 assets=assets,
             )
         )
+        del raster_arr, index_raster
     generate_stac(
         items=output_items,
         output_dir=output_dir,

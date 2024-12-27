@@ -14,14 +14,13 @@ from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
 from src.utils.raster import generate_thumbnail_with_continuous_colormap, get_raster_bounds, image_to_base64, save_cog
 from src.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
+from src.workflows.ds.utils import prepare_data_array, prepare_s2_ard_data_array
 from src.workflows.legacy.raster.calculator import query_stac
 from src.workflows.spectral.indices import (
     CDOM,
     DOC,
     CyaCells,
     Turbidity,
-    prepare_data_array,
-    prepare_s2_ard_data_array,
     resolve_rescale_params,
 )
 
