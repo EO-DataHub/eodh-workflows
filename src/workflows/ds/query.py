@@ -229,9 +229,10 @@ def handle_s2_query(
         collections=[stac_collection],
         filter_lang="cql2-json",
         filter=filter_spec,
+        limit=limit,
         max_items=limit,
         fields={
-            "include": ["properties.proj:epsg"],
+            "include": ["properties.proj:epsg", "properties.proj:code", "properties.eo:cloud_cover"],
         },
     )
 
