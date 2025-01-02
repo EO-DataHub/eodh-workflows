@@ -210,7 +210,7 @@ def query_stac(
         filter=filter_spec,
         max_items=limit,
         fields={
-            "include": ["properties.proj:epsg"],
+            "include": ["properties.proj:epsg", "properties.proj:code", "properties.eo:cloud_cover"],
         },
     )
 
