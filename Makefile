@@ -484,8 +484,18 @@ v2-cwl-s2ard-wq:
 		--query_cloud_cover_max 100 \
 		--reproject_epsg EPSG:3857
 
+.PHONY: cwl-scatter
+cwl-scatter:
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/wq-scatter-ard/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/wq-scatter-ard/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/local/other/scatter-water-quality.cwl\#scatter-water-quality \
+		./cwl_files/local/other/scatter-inputs.json
+
 .PHONY: cwl-v1
-cwl-v1: docker-build cwl-ndvi cwl-ard-ndvi cwl-ard-doc cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ard-wq
+cwl-v1: docker-build cwl-ndvi cwl-ard-ndvi cwl-ard-doc cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ard-wq cwl-scatter
 
 .PHONY: cwl-v2
 cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc v2-cwl-s2-thumb v2-cwl-s2ard-ndvi v2-cwl-s2ard-wq
