@@ -1,0 +1,36 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="vector-chip" type="PythonConfigurationType" factoryName="Python" folderName="eopro">
+    <module name="eodh-workflows" />
+    <option name="ENV_FILES" value="" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
+    </envs>
+    <option name="SDK_HOME" value="" />
+    <option name="SDK_NAME" value="eodh-workflows" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="IS_MODULE_SDK" value="false" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <EXTENSION ID="net.ashald.envfile">
+      <option name="IS_ENABLED" value="false" />
+      <option name="IS_SUBST" value="false" />
+      <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+      <option name="IS_IGNORE_MISSING_FILES" value="false" />
+      <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+      <ENTRIES>
+        <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+      </ENTRIES>
+    </EXTENSION>
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/workflows/eopro_entrypoint.py" />
+    <option name="PARAMETERS" value="vector chip --aoi=&quot;{\&quot;type\&quot;:\&quot;Polygon\&quot;,\&quot;coordinates\&quot;:[[[0.11272779218983979,51.959784364683486],[-0.1741968319434045,51.70268047448596],[-0.7289177719343433,51.78854487416342],[-0.9632395483098258,51.569119351068395],[-1.1832150934786465,51.37251771878215],[-0.30331291280336437,51.23798510373379],[-0.2794025274589274,51.03093527261069],[0.20358725649870044,50.98881182250656],[0.7583081964896391,51.20503935512335],[0.3613957997719849,51.405343502137555],[-0.04986282815233196,51.417274312437314],[0.06968909856985324,51.61962200502634],[0.3327033373586603,51.84175795507221],[0.8491676607984998,51.82107144583654],[1.4086706778583264,52.49580766082471],[0.5096401889074943,52.55981229614625],[-0.23636383383894063,52.562719381794636],[-0.16463267780562957,52.45211464624799],[0.5192043430452693,52.42004552576873],[0.9017705085562614,52.405460936973356],[0.8204751983851757,52.2329983565908],[0.3040108749453361,52.03633531420013],[0.11272779218983979,51.959784364683486]]]}&quot; --output_dir=data/processed/eopro/vector-chip/uk" />
+    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="EMULATE_TERMINAL" value="false" />
+    <option name="MODULE_MODE" value="false" />
+    <option name="REDIRECT_INPUT" value="false" />
+    <option name="INPUT_FILE" value="" />
+    <method v="2" />
+  </configuration>
+</component>
