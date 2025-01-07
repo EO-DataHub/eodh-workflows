@@ -8,7 +8,7 @@ from src.workflows.raster.clip import clip_stac_items
 from src.workflows.raster.reproject import reproject_stac_items
 from src.workflows.raster.thumbnail import generate_thumbnail_for_stac_items
 from src.workflows.spectral.index import spectral_index
-from src.workflows.stac.join import join
+from src.workflows.stac.join import join, join_v2
 from src.workflows.vector.chip import chip_vector
 from src.workflows.water.quality import water_quality
 
@@ -55,6 +55,7 @@ def vector() -> None:
 
 ds.add_command(query, name="query")
 stac.add_command(join, name="join")
+stac.add_command(join_v2, name="join_v2")
 spectral.add_command(spectral_index, name="index")
 raster.add_command(clip_stac_items, name="clip")
 raster.add_command(reproject_stac_items, name="reproject")
