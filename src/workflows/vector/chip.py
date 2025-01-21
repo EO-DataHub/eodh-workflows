@@ -50,9 +50,13 @@ def chip_vector(aoi: str, output_dir: Path | None = None, chip_size_deg: float =
 
     chips = generate_chips(aoi_polygon, chip_size_deg=chip_size_deg)
     feats = chips.to_geo_dict()
+    feats_as_strs = []
     for idx, chip in enumerate(feats["features"]):
         output_chip_fp = output_dir / f"{idx:02d}.geojson"
         output_chip_fp.write_text(json.dumps(chip["geometry"], indent=4), encoding="utf-8")
+        feats_as_strs.append(json.dumps(chip["geometry"]))
+
+    (output_dir / "chips-full.geojson").write_text(json.dumps(feats_as_strs, indent=4), encoding="utf-8")
 
 
 def generate_chips(aoi_geom: shapely.Polygon, chip_size_deg: float = 0.2) -> gpd.GeoDataFrame:

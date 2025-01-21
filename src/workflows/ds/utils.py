@@ -17,6 +17,7 @@ import stackstac
 from distributed import Client as DistributedClient, LocalCluster
 from pystac import Item
 from rasterio.mask import mask
+from retry import retry
 from shapely.geometry import mapping, shape
 from tqdm import tqdm
 
@@ -78,6 +79,7 @@ def handle_single_asset_dask(
     return asset_key, asset
 
 
+@retry(tries=3, delay=3, backoff=2)
 def download_asset(asset: dict[str, Any], output_path: Path, timeout: int = 60) -> dict[str, Any]:
     """Download a single asset from a URL."""
     response = requests.get(asset["href"], stream=True, timeout=timeout)
@@ -103,6 +105,7 @@ def get_features_geometry(gdf: gpd.GeoDataFrame) -> list[dict[str, Any]]:
     return [json.loads(gdf.to_json())["features"][0]["geometry"]]
 
 
+@retry(tries=3, delay=3, backoff=2)
 def download_and_clip_asset(asset: dict[str, Any], output_path: Path, aoi: dict[str, Any]) -> dict[str, Any]:
     """Download and clip a GeoTIFF/COG asset to the AOI without downloading the full asset."""
     _logger.info("Downloading and clipping asset: %s", asset["href"])
@@ -204,8 +207,15 @@ def download_search_results(
     return results  # Return the complete dict of results
 
 
+@retry(tries=3, delay=3, backoff=2)
 def _download_sh_item(
-    item: Item, item_output_dir: Path, aoi: dict[str, Any], token: str, stac_collection: str, *, timeout: int = 20
+    item: Item,
+    item_output_dir: Path,
+    aoi: dict[str, Any],
+    token: str,
+    stac_collection: str,
+    *,
+    timeout: int = 20,
 ) -> Path:
     process_api_url = consts.sentinel_hub.SH_PROCESS_API
     aoi_polygon = geojson_to_polygon(json.dumps(aoi))
@@ -325,6 +335,7 @@ def download_sentinel_hub(
     return results  # Return the complete dict of results
 
 
+@retry(tries=3, delay=3, backoff=2)
 def split_s2_ard_cogs_into_separate_assets(fps: Iterable[Path]) -> None:
     for fp in fps:
         item = Item.from_file(fp)
@@ -356,6 +367,7 @@ def split_s2_ard_cogs_into_separate_assets(fps: Iterable[Path]) -> None:
         cog_fp.unlink()
 
 
+@retry(tries=3, delay=3, backoff=2)
 def prepare_data_array(
     item: pystac.Item,
     assets: list[str],
@@ -390,6 +402,7 @@ def prepare_s2_ard_data_array(
     return _prepare_s2_ard_data_array_clip(item, aoi)
 
 
+@retry(tries=3, delay=3, backoff=2)
 def _prepare_s2_ard_data_array_clip(item: pystac.Item, aoi: dict[str, Any]) -> xarray.DataArray:
     # Load AOI geometry
     aoi_geometry = shape(aoi)
@@ -439,6 +452,7 @@ def _prepare_s2_ard_data_array_clip(item: pystac.Item, aoi: dict[str, Any]) -> x
         )
 
 
+@retry(tries=3, delay=3, backoff=2)
 def _prepare_s2_ard_data_array_no_clip(item: pystac.Item) -> xarray.DataArray:
     asset = item.assets["cog"]
     with tempfile.TemporaryDirectory() as tmpdir_name:

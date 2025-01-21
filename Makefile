@@ -491,8 +491,8 @@ cwl-scatter:
 		--outdir=./data/processed/cwl/wq-scatter-ard/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/other/scatter-water-quality.cwl\#scatter-water-quality \
-		./cwl_files/local/other/scatter-inputs.json
+		./cwl_files/scatter-water-quality.cwl\#scatter-water-quality \
+		./cwl_files/scatter-inputs.json
 
 .PHONY: cwl-v1
 cwl-v1: docker-build cwl-ndvi cwl-ard-ndvi cwl-ard-doc cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ard-wq cwl-scatter
@@ -502,3 +502,43 @@ cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq
 
 .PHONY: cwl-all
 cwl-all: cwl-v1 cwl-v2
+
+.PHONY: cwl-scatter-wq
+cwl-scatter-wq:
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/scatter-wq/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/scatter-wq/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/scatter-water-quality-app.cwl\#scatter-water-quality \
+		./cwl_files/scatter-water-quality-inputs.json
+
+.PHONY: cwl-scatter-rc-ndvi
+cwl-scatter-rc-ndvi:
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/scatter-rc-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/scatter-rc-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/scatter-raster-calcluate-app.cwl\#scatter-raster-calculate \
+		./cwl_files/scatter-raster-calculate-ndvi-inputs.json
+
+.PHONY: cwl-scatter-rc-cya
+cwl-scatter-rc-cya:
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/scatter-rc-cya/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/scatter-rc-cya/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/scatter-raster-calculate-app.cwl\#scatter-raster-calculate \
+		./cwl_files/scatter-raster-calculate-cya-inputs.json
+
+.PHONY: cwl-scatter-lcc
+cwl-scatter-lcc:
+	@cwltool \
+		--tmp-outdir-prefix=./data/processed/cwl/scatter-lcc/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=./data/processed/cwl/scatter-lcc/$(shell date --iso-8601=minutes)/outputs/ \
+		--leave-tmpdir \
+		--copy-outputs \
+		./cwl_files/scatter-lulc-change-app.cwl\#scatter-lulc-change \
+		./cwl_files/scatter-lulc-change-inputs.json
