@@ -109,18 +109,24 @@ def calculate(  # noqa: PLR0914, RUF100
     output_items = []
     for item in tqdm(sorted_items, desc="Processing items"):
         _logger.info("Working with: %s", item.id)
-        raster_arr = (
-            prepare_data_array(
-                item=item,
-                bbox=geojson_to_polygon(aoi).bounds if clip == "True" else None,
-                assets=["blue", "green", "red", "rededge1", "nir", "scl"],
+
+        try:
+            raster_arr = (
+                prepare_data_array(
+                    item=item,
+                    bbox=geojson_to_polygon(aoi).bounds if clip == "True" else None,
+                    assets=["blue", "green", "red", "rededge1", "nir", "scl"],
+                )
+                if stac_collection == "sentinel-2-l2a"
+                else prepare_s2_ard_data_array(
+                    item=item,
+                    aoi=aoi_polygon if clip == "True" else None,
+                )
             )
-            if stac_collection == "sentinel-2-l2a"
-            else prepare_s2_ard_data_array(
-                item=item,
-                aoi=aoi_polygon if clip == "True" else None,
-            )
-        )
+        except Exception:
+            _logger.exception("Failed to process item: %s - skipping item", item.id)
+            continue
+
         scale, offset = resolve_rescale_params(collection_name=item.collection_id, item_datetime=item.datetime)
         index_raster = index_calculator.calculate_index(
             raster_arr=raster_arr,
