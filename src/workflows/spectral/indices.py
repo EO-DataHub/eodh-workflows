@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import xarray
-from skimage.morphology import closing, erosion, square
+from skimage.morphology import closing, erosion, footprint_rectangle
 from xrspatial.multispectral import evi, ndvi, savi
 
 from src.consts.compute import EPS
@@ -62,8 +62,8 @@ def sentinel_water_mask_from_bands(
     """
     swm = (blue + green) / (nir + swir16)
     swm = np.where(swm >= threshold, 1, 0)
-    swm = closing(swm, square(5))
-    return erosion(swm, square(2))  # type: ignore[no-any-return]
+    swm = closing(swm, footprint_rectangle((5, 5)))
+    return erosion(swm, footprint_rectangle((2, 2)))  # type: ignore[no-any-return]
 
 
 def water_mask_from_arr(raster_arr: xarray.DataArray) -> np.ndarray[Any, Any]:

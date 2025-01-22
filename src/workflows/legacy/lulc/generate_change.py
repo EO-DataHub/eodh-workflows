@@ -71,6 +71,10 @@ def generate_lulc_change(  # noqa: PLR0914, RUF100
 
     items = _get_data(source_ds, aoi_polygon, date_start, date_end)
 
+    if not items:
+        _logger.warning("No items found using specified criteria.")
+        return
+
     classes_orig_dict = get_classes_orig_dict(source_ds, items[0])
     classes_unique_values = get_classes(classes_orig_dict)
 
