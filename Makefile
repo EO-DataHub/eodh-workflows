@@ -204,13 +204,8 @@ cwl-ndvi:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/local/eodh/raster-calculate-app.cwl\#raster-calculate \
-		--stac_collection sentinel-2-l2a \
-		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-		--date_start 2024-01-01T00:00:00Z \
-		--date_end 2024-12-31T23:59:59Z \
-		--limit=2 \
-		--index=$(INDEX) \
-		--clip=True
+		./cwl_files/inputs/raster-calculate/ndvi-s2.json
+
 
 .PHONY: cwl-ard-ndvi  ## Runs Raster Calculator with S2 ARD
 cwl-ard-ndvi:
@@ -220,13 +215,8 @@ cwl-ard-ndvi:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/local/eodh/raster-calculate-app.cwl\#raster-calculate \
-		--stac_collection sentinel-2-l2a-ard \
-		--aoi "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
-		--date_start 2023-01-01T00:00:00Z \
-		--date_end 2024-12-31T23:59:59Z \
-		--limit=2 \
-		--index=$(INDEX) \
-		--clip=True
+		./cwl_files/inputs/raster-calculate/ndvi-ard.json
+
 
 .PHONY: cwl-ard-doc  ## Runs Raster Calculator with S2 ARD
 cwl-ard-doc:
@@ -236,13 +226,8 @@ cwl-ard-doc:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/local/eodh/raster-calculate-app.cwl\#raster-calculate \
-		--stac_collection sentinel-2-l2a-ard \
-		--aoi "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
-		--date_start 2023-01-01T00:00:00Z \
-		--date_end 2024-12-31T23:59:59Z \
-		--limit=2 \
-		--index=doc \
-		--clip=True
+		./cwl_files/inputs/raster-calculate/doc-ard.json
+
 
 .PHONY: cwl-corinelc  ## Runs LULC Change with CORINE
 cwl-corinelc:
@@ -252,10 +237,8 @@ cwl-corinelc:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/local/eodh/lulc-change-app.cwl\#land-cover-change \
-		--source clms-corinelc \
-		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
-		--date_start 2006-01-01T00:00:00Z \
-		--date_end 2018-12-31T23:59:59Z
+		./cwl_files/inputs/land-cover-change/corine.json
+
 
 .PHONY: cwl-globallc  ## Runs LULC Change with ESA GLC
 cwl-globallc:
@@ -265,10 +248,8 @@ cwl-globallc:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/local/eodh/lulc-change-app.cwl\#land-cover-change \
-		--source esacci-globallc \
-		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
-		--date_start 2008-01-01T00:00:00Z \
-		--date_end 2010-12-31T23:59:59Z
+		./cwl_files/inputs/land-cover-change/globallc.json
+
 
 .PHONY: cwl-water-bodies  ## Runs LULC Change with Water Bodies
 cwl-water-bodies:
@@ -278,10 +259,8 @@ cwl-water-bodies:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/local/eodh/lulc-change-app.cwl\#land-cover-change \
-		--source clms-water-bodies \
-		--aoi "{\"type\": \"Polygon\",\"coordinates\": [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}" \
-		--date_start 2024-01-01T00:00:00Z \
-		--date_end 2024-03-31T23:59:59Z
+		./cwl_files/inputs/land-cover-change/water-bodies.json
+
 
 .PHONY: cwl-water-quality  ## Runs Water Quality app
 cwl-water-quality:
@@ -291,12 +270,8 @@ cwl-water-quality:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/local/eodh/water-quality-app.cwl\#water-quality \
-		--stac_collection sentinel-2-l2a \
-		--aoi "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-		--date_start 2024-01-01T00:00:00Z \
-		--date_end 2024-12-31T23:59:59Z \
-		--limit=2 \
-		--clip=True
+		./cwl_files/inputs/water-quality/s2.json
+
 
 .PHONY: cwl-ard-wq  ## Runs Water Quality app with S2 ARD
 cwl-ard-wq:
@@ -306,12 +281,7 @@ cwl-ard-wq:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/local/eodh/water-quality-app.cwl\#water-quality \
-		--stac_collection sentinel-2-l2a-ard \
-		--aoi "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
-		--date_start 2023-01-01T00:00:00Z \
-		--date_end 2024-12-31T23:59:59Z \
-		--limit=2 \
-		--clip=True
+		./cwl_files/inputs/water-quality/ard.json
 
 # CWL V2 commands
 
@@ -484,16 +454,6 @@ v2-cwl-s2ard-wq:
 		--query_cloud_cover_max 100 \
 		--reproject_epsg EPSG:3857
 
-.PHONY: cwl-scatter
-cwl-scatter:
-	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/wq-scatter-ard/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/wq-scatter-ard/$(shell date --iso-8601=minutes)/outputs/ \
-		--leave-tmpdir \
-		--copy-outputs \
-		./cwl_files/scatter-water-quality.cwl\#scatter-water-quality \
-		./cwl_files/scatter-inputs.json
-
 .PHONY: cwl-v1
 cwl-v1: docker-build cwl-ndvi cwl-ard-ndvi cwl-ard-doc cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ard-wq cwl-scatter
 
@@ -511,7 +471,7 @@ cwl-scatter-wq:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/scatter-water-quality-app.cwl\#scatter-water-quality \
-		./cwl_files/scatter-water-quality-inputs.json
+		./cwl_files/inputs/water-quality/scatter-ard.json
 
 .PHONY: cwl-scatter-rc-ndvi
 cwl-scatter-rc-ndvi:
@@ -521,7 +481,7 @@ cwl-scatter-rc-ndvi:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/scatter-raster-calcluate-app.cwl\#scatter-raster-calculate \
-		./cwl_files/scatter-raster-calculate-ndvi-inputs.json
+		./cwl_files/inputs/raster-calcluate/scatter-ndvi.json
 
 .PHONY: cwl-scatter-rc-cya
 cwl-scatter-rc-cya:
@@ -531,7 +491,7 @@ cwl-scatter-rc-cya:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/scatter-raster-calculate-app.cwl\#scatter-raster-calculate \
-		./cwl_files/scatter-raster-calculate-cya-inputs.json
+		./cwl_files/inputs/raster-calculate/scatter-cya.json
 
 .PHONY: cwl-scatter-lcc
 cwl-scatter-lcc:
@@ -541,4 +501,4 @@ cwl-scatter-lcc:
 		--leave-tmpdir \
 		--copy-outputs \
 		./cwl_files/scatter-lulc-change-app.cwl\#scatter-lulc-change \
-		./cwl_files/scatter-lulc-change-inputs.json
+		./cwl_files/inputs/land-cover-change/scatter-corine.json

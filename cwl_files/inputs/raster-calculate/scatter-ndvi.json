@@ -9,6 +9,5 @@
   "date_end": "2024-12-01",
   "index": "ndvi",
   "limit": "3",
-  "clip": "true",
-  "output_dir": "data/processed/eodh/scatter-rc-ndvi"
+  "clip": "true"
 }
