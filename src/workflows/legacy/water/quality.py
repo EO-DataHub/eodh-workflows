@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Literal
+from uuid import uuid4
 
 import click
 import rioxarray  # noqa: F401
@@ -93,6 +94,9 @@ def water_quality(  # noqa: PLR0914, RUF100
     for item in progress_bar:
         progress_bar.set_description(f"Working with: {item.id}")
 
+        # Generate new Item ID to avoid conflicts if running with scatter operator
+        item_id = str(uuid4())
+
         raster_arr = (
             prepare_data_array(
                 item=item,
@@ -109,7 +113,7 @@ def water_quality(  # noqa: PLR0914, RUF100
         scale, offset = resolve_rescale_params(collection_name=item.collection_id, item_datetime=item.datetime)
 
         out_item = prepare_stac_item(
-            id_item=item.id,
+            id_item=item_id,
             geometry=get_raster_bounds(raster_arr),
             epsg=raster_arr.rio.crs.to_epsg(),
             transform=list(raster_arr.rio.transform()),
@@ -139,7 +143,7 @@ def water_quality(  # noqa: PLR0914, RUF100
             ).rio.reproject(WGS84)
             raster_path = save_cog(
                 arr=index_raster,
-                asset_id=f"{item.id}_{index_calculator.name}",
+                asset_id=f"{item_id}_{index_calculator.name}",
                 output_dir=output_dir,
                 epsg=WGS84,
             )
@@ -148,7 +152,7 @@ def water_quality(  # noqa: PLR0914, RUF100
 
             if index_calculator.name == "doc":  # Use DOC as item's thumbnail
                 mpl_cmap, _ = index_calculator.mpl_colormap
-                thumb_fp = output_dir / f"{item.id}.png"
+                thumb_fp = output_dir / f"{item_id}.png"
                 generate_thumbnail_with_continuous_colormap(
                     data=index_raster,
                     out_fp=thumb_fp,

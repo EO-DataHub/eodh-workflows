@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 import click
 import numpy as np
@@ -85,6 +86,9 @@ def generate_lulc_change(  # noqa: PLR0914, RUF100
     for item in progress_bar:
         progress_bar.set_description(f"Working with: {item.id}")
 
+        # Generate new Item ID to avoid conflicts if running with scatter operator
+        item_id = str(uuid4())
+
         # Build array
         raster_arr = build_raster_array(source=source_ds, item=item, bbox=aoi_polygon.bounds)
 
@@ -99,11 +103,11 @@ def generate_lulc_change(  # noqa: PLR0914, RUF100
         raster_arr.attrs["lulc_classes_m2"] = classes_m2
 
         # Save COG with lulc change values in metadata
-        raster_path = save_cog(arr=raster_arr, asset_id=item.id, epsg=WGS84, output_dir=output_dir)
-        thumb_fp = output_dir / f"{item.id}.png"
+        raster_path = save_cog(arr=raster_arr, asset_id=item_id, epsg=WGS84, output_dir=output_dir)
+        thumb_fp = output_dir / f"{item_id}.png"
         generate_thumbnail_with_discrete_classes(
             raster_arr,
-            out_fp=output_dir / f"{item.id}.png",
+            out_fp=output_dir / f"{item_id}.png",
             classes_list=classes_orig_dict,
         )
         thumb_b64 = image_to_base64(thumb_fp)
@@ -123,7 +127,7 @@ def generate_lulc_change(  # noqa: PLR0914, RUF100
         # Include lulc change in STAC item properties
         stac_items.append(
             prepare_stac_item(
-                id_item=item.id,
+                id_item=item_id,
                 geometry=bounds_polygon,
                 epsg=raster_arr.rio.crs.to_epsg(),
                 transform=list(raster_arr.rio.transform()),
