@@ -4,6 +4,7 @@ import json
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
+from uuid import uuid4
 
 import click
 from pystac_client import Client
@@ -110,6 +111,9 @@ def calculate(  # noqa: PLR0914, RUF100
     for item in tqdm(sorted_items, desc="Processing items"):
         _logger.info("Working with: %s", item.id)
 
+        # Generate new Item ID to avoid conflicts if running with scatter operator
+        item_id = str(uuid4())
+
         try:
             raster_arr = (
                 prepare_data_array(
@@ -133,11 +137,11 @@ def calculate(  # noqa: PLR0914, RUF100
             rescale_factor=scale,
             rescale_offset=offset,
         ).rio.reproject(WGS84)
-        raster_path = save_cog(arr=index_raster, asset_id=item.id, output_dir=output_dir, epsg=WGS84)
+        raster_path = save_cog(arr=index_raster, asset_id=item_id, output_dir=output_dir, epsg=WGS84)
 
         vmin, vmax, _ = index_calculator.typical_range
         mpl_cmap, _ = index_calculator.mpl_colormap
-        thumb_fp = output_dir / f"{item.id}.png"
+        thumb_fp = output_dir / f"{item_id}.png"
         generate_thumbnail_with_continuous_colormap(
             index_raster,
             out_fp=thumb_fp,
@@ -158,7 +162,7 @@ def calculate(  # noqa: PLR0914, RUF100
 
         output_items.append(
             prepare_stac_item(
-                id_item=item.id,
+                id_item=item_id,
                 geometry=get_raster_bounds(index_raster),
                 epsg=index_raster.rio.crs.to_epsg(),
                 transform=list(index_raster.rio.transform()),
