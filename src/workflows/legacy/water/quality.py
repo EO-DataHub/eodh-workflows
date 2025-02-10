@@ -20,6 +20,7 @@ from src.workflows.legacy.raster.calculator import query_stac
 from src.workflows.spectral.indices import (
     CDOM,
     DOC,
+    NDWI,
     CyaCells,
     Turbidity,
     resolve_rescale_params,
@@ -134,6 +135,7 @@ def water_quality(  # noqa: PLR0914, RUF100
             DOC(),
             CyaCells(),
             Turbidity(),
+            NDWI(),
         ]:
             _logger.info("Calculating %s index for item %s", index_calculator.full_name, item.id)
             index_raster = index_calculator.calculate_index(
