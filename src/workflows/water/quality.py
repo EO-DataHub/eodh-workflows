@@ -20,7 +20,6 @@ from src.workflows.spectral.indices import (
     DOC,
     NDWI,
     CyaCells,
-    Turbidity,
     resolve_rescale_params,
 )
 
@@ -81,7 +80,6 @@ def water_quality(data_dir: Path, output_dir: Path | None = None) -> None:
             CDOM(),
             DOC(),
             CyaCells(),
-            Turbidity(),
             NDWI(),
         ]:
             _logger.info("Calculating %s index for item %s", index_calculator.full_name, item.id)
