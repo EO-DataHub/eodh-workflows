@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-SH_TOKEN_URL = "https://services.sentinel-hub.com/auth/realms/main/protocol/openid-connect/token"  # noqa: S105
-
-SH_PROCESS_API = "https://creodias.sentinel-hub.com/api/v1/process"
-
 SH_EVALSCRIPT_CORINELC = """
     function setup() {
         return {

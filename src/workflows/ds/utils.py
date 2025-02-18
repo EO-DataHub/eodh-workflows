@@ -23,6 +23,7 @@ from tqdm import tqdm
 
 from src import consts
 from src.consts.stac import LOCAL_COLLECTION_NAME, SENTINEL_2_ARD_COLLECTION_NAME, SENTINEL_2_L2A_COLLECTION_NAME
+from src.core.settings import current_settings
 from src.utils.geom import geojson_to_polygon
 from src.utils.logging import get_logger
 from src.utils.raster import save_cog_v2
@@ -35,16 +36,17 @@ if TYPE_CHECKING:
 
 
 _logger = get_logger(__name__)
+settings = current_settings()
 
 N_WORKERS = 10
 THREADS_PER_WORKER = 2
 DATASET_TO_CATALOGUE_LOOKUP = {
-    "sentinel-2-l1c": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/earth-search-aws",
-    "sentinel-2-l2a": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/earth-search-aws",
-    "sentinel-2-l2a-ard": f"{consts.stac.EODH_CATALOG_API_ENDPOINT}/catalogs/supported-datasets/ceda-stac-catalogue",
-    "esa-lccci-glcm": consts.stac.CEDA_CATALOG_API_ENDPOINT,
-    "clms-corine-lc": consts.stac.SH_CATALOG_API_ENDPOINT,
-    "clms-water-bodies": consts.stac.SH_CATALOG_API_ENDPOINT,
+    "sentinel-2-l1c": f"{settings.eodh.stac_api_endpoint}/catalogs/supported-datasets/catalogs/earth-search-aws",
+    "sentinel-2-l2a": f"{settings.eodh.stac_api_endpoint}/catalogs/supported-datasets/catalogs/earth-search-aws",
+    "sentinel-2-l2a-ard": f"{settings.eodh.stac_api_endpoint}/catalogs/supported-datasets/catalogs/ceda-stac-catalogue",
+    "esa-lccci-glcm": f"{settings.eodh.stac_api_endpoint}/catalogs/supported-datasets/catalogs/ceda-stac-catalogue",
+    "clms-corine-lc": settings.sentinel_hub.stac_api_endpoint,
+    "clms-water-bodies": settings.sentinel_hub.stac_api_endpoint,
 }
 DATASET_TO_COLLECTION_LOOKUP = {
     "sentinel-2-l1c": "sentinel-2-l1c",
@@ -217,7 +219,7 @@ def _download_sh_item(
     *,
     timeout: int = 20,
 ) -> Path:
-    process_api_url = consts.sentinel_hub.SH_PROCESS_API
+    process_api_url = settings.sentinel_hub.process_api_endpoint
     aoi_polygon = geojson_to_polygon(json.dumps(aoi))
     bbox = aoi_polygon.bounds
 
