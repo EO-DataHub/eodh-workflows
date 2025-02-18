@@ -201,14 +201,11 @@ def handle_s2_query(
     cloud_cover_min: int | None = None,
     cloud_cover_max: int | None = None,
 ) -> None:
-    # Ensure output directory is set
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Connect to STAC API
     catalog = Client.open(DATASET_TO_CATALOGUE_LOOKUP[stac_collection])
     stac_collection = DATASET_TO_COLLECTION_LOOKUP[stac_collection]
 
-    # Define your search with CQL2 syntax
     filter_spec = {
         "op": "and",
         "args": [
@@ -265,7 +262,6 @@ def handle_esa_cci_glc_query(
     clip: Literal["True", "False"] = "True",
     output_dir: Path | None = None,
 ) -> None:
-    # Ensure output directory is set
     if output_dir is None:
         output_dir = Path("./stac_downloads")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -311,14 +307,12 @@ def handle_sh_query(
     clip: Literal["True", "False"] = "False",
     output_dir: Path | None = None,
 ) -> None:
-    # Ensure output directory is set
     if output_dir is None:
         output_dir = Path("./stac_downloads")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     aoi_polygon = geojson_to_polygon(json.dumps(aoi))
 
-    # Sentinel Hub requires authentication
     token = sh_auth_token()
 
     catalog = Client.open(DATASET_TO_CATALOGUE_LOOKUP[stac_collection], headers={"Authorization": f"Bearer {token}"})
