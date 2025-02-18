@@ -25,6 +25,7 @@ EVALSCRIPT_MAPPING = {
     consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME: consts.sentinel_hub.SH_EVALSCRIPT_WATERBODIES,
 }
 HTTP_OK = 200
+settings = current_settings()
 
 
 def sh_get_data(
@@ -35,8 +36,6 @@ def sh_get_data(
     item: Item,
     timeout: int = 20,
 ) -> DataArray:
-    process_api_url = consts.sentinel_hub.SH_PROCESS_API
-
     payload = {
         "input": {
             "bounds": {"bbox": bbox, "properties": {"crs": "http://www.opengis.net/def/crs/EPSG/0/4326"}},
@@ -65,7 +64,12 @@ def sh_get_data(
 
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-    response = requests.post(process_api_url, headers=headers, data=json.dumps(payload), timeout=timeout)
+    response = requests.post(
+        settings.sentinel_hub.process_api_endpoint,
+        headers=headers,
+        data=json.dumps(payload),
+        timeout=timeout,
+    )
 
     # Checking the response
     if response.status_code == HTTP_OK:
@@ -82,16 +86,14 @@ def sh_get_data(
 
 
 def sh_auth_token() -> str:
-    settings = current_settings()
-
-    client = BackendApplicationClient(client_id=settings.sh_client_id)
+    client = BackendApplicationClient(client_id=settings.sentinel_hub.client_id)
     oauth = OAuth2Session(client=client)
 
     oauth.register_compliance_hook("access_token_response", _sentinelhub_compliance_hook)
 
     token = oauth.fetch_token(
-        token_url=consts.sentinel_hub.SH_TOKEN_URL,
-        client_secret=settings.sh_secret,
+        token_url=settings.sentinel_hub.token_endpoint,
+        client_secret=settings.sentinel_hub.client_secret,
         include_client_id=True,
     )
 

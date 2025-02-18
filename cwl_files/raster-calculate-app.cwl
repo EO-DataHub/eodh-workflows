@@ -69,6 +69,13 @@ $graph:
       ResourceRequirement:
         coresMax: 2
         ramMax: 4096
+      EnvVarRequirement:
+        envDef:
+          ENVIRONMENT: <<ENVIRONMENT>>
+          SENTINEL_HUB__CLIENT_ID: <<SENTINEL_HUB__CLIENT_ID>>
+          SENTINEL_HUB__CLIENT_SECRET: <<SENTINEL_HUB__CLIENT_SECRET>>
+          SENTINEL_HUB__STAC_API_ENDPOINT: <<SENTINEL_HUB__STAC_API_ENDPOINT>>
+          EODH__STAC_API_ENDPOINT: <<EODH__STAC_API_ENDPOINT>>
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest

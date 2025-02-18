@@ -203,12 +203,15 @@ def query_stac(
         )
         raise ValueError(msg)
 
-    # Connect to STAC API
     catalog = Client.open(DATASET_TO_CATALOGUE_LOOKUP[stac_collection])
 
-    # Define your search with CQL2 syntax
-    filter_spec = {"op": "s_intersects", "args": [{"property": "geometry"}, aoi_polygon]}
-
+    filter_spec = {
+        "op": "and",
+        "args": [
+            {"op": "s_intersects", "args": [{"property": "geometry"}, aoi_polygon]},
+            {"op": "=", "args": [{"property": "collection"}, DATASET_TO_COLLECTION_LOOKUP[stac_collection]]},
+        ],
+    }
     if date_start:
         filter_spec["args"].append({"op": ">=", "args": [{"property": "datetime"}, date_start]})  # type: ignore[attr-defined]
     if date_end:
