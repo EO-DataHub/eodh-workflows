@@ -18,6 +18,7 @@ from shapely.geometry import box, shape
 from src import consts
 from src.consts.compute import EPS
 from src.consts.crs import PSEUDO_MERCATOR, WGS84
+from src.core.settings import current_settings
 from src.utils.logging import get_logger
 from src.utils.sentinel_hub import sh_auth_token, sh_get_data
 
@@ -32,6 +33,7 @@ if TYPE_CHECKING:
 _logger = get_logger(__name__)
 
 EXPECTED_NDIM = 2
+settings = current_settings()
 
 
 def build_raster_array(
@@ -40,7 +42,7 @@ def build_raster_array(
     bbox: tuple[int | float, int | float, int | float, int | float],
     epsg: int = WGS84,
 ) -> xr.DataArray:
-    if source.catalog == consts.stac.CEDA_CATALOG_API_ENDPOINT:
+    if source.catalog.startswith(current_settings().eodh.stac_api_endpoint):
         return (
             stackstac.stack(
                 item,
@@ -56,9 +58,14 @@ def build_raster_array(
             .squeeze()
             .compute()
         )
-    if source.catalog == consts.stac.SH_CATALOG_API_ENDPOINT:
-        token = sh_auth_token()
-        return sh_get_data(token=token, source=source, bbox=bbox, stac_collection=source.collection, item=item)
+    if source.catalog == settings.sentinel_hub.stac_api_endpoint:
+        return sh_get_data(
+            token=sh_auth_token(),
+            source=source,
+            bbox=bbox,
+            stac_collection=source.collection,
+            item=item,
+        )
     error_message = "Unsupported STAC catalog"
     raise ValueError(error_message)
 

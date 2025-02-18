@@ -12,16 +12,19 @@ CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activ
 CONDA_ACTIVATE_BASE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate base
 
 IMAGE_NAME=eopro-workflows
-CONTAINER_NAME=eodh-workflows
+CONTAINER_NAME=eopro-workflows
 DOCKERFILE_PATH=.
 
 INDEX=ndvi
+CWL_FILES_DIR=./cwl_files/local
+CWL_INPUTS_DIR=./cwl_files/inputs
+CWL_OUTPUT_DIR=./data/processed/cwl
 
 define PRINT_HELP_PYSCRIPT
 import re, sys
 
 for line in sys.stdin:
-	match = re.match(r'^\.PHONY: ([0-9a-zA-Z_-]+).*?## (.*)$$', line)
+	match = re.match(r'^\.PHONY: ([0-9a-zA-Z_-]+).*?## (.*)$', line)
 	if match:
 		target, help = match.groups()
 		print("%-45s - %s" % (target, help))
@@ -30,7 +33,7 @@ export PRINT_HELP_PYSCRIPT
 
 .PHONY: help  ## Prints help message
 help:
-	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+	@python -c "$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
 # Git repo initialization
 
@@ -199,103 +202,103 @@ docker-rebuild: docker-stop docker-rm docker-rmi docker-all
 .PHONY: cwl-ndvi  ## Runs Raster Calculator
 cwl-ndvi:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/rc-v1-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/rc-v1-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/rc-v1-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/rc-v1-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eodh/raster-calculate-app.cwl\#raster-calculate \
-		./cwl_files/inputs/raster-calculate/ndvi-s2.json
+		$(CWL_FILES_DIR)/eodh/raster-calculate-app.cwl\#raster-calculate \
+		$(CWL_INPUTS_DIR)/raster-calculate/ndvi-s2.json
 
 
 .PHONY: cwl-ard-ndvi  ## Runs Raster Calculator with S2 ARD
 cwl-ard-ndvi:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/rc-v1-ard-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/rc-v1-ard-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/rc-v1-ard-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/rc-v1-ard-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eodh/raster-calculate-app.cwl\#raster-calculate \
-		./cwl_files/inputs/raster-calculate/ndvi-ard.json
+		$(CWL_FILES_DIR)/eodh/raster-calculate-app.cwl\#raster-calculate \
+		$(CWL_INPUTS_DIR)/raster-calculate/ndvi-ard.json
 
 
 .PHONY: cwl-ard-doc  ## Runs Raster Calculator with S2 ARD
 cwl-ard-doc:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/rc-v1-ard-doc/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/rc-v1-ard-doc/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/rc-v1-ard-doc/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/rc-v1-ard-doc/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eodh/raster-calculate-app.cwl\#raster-calculate \
-		./cwl_files/inputs/raster-calculate/doc-ard.json
+		$(CWL_FILES_DIR)/eodh/raster-calculate-app.cwl\#raster-calculate \
+		$(CWL_INPUTS_DIR)/raster-calculate/doc-ard.json
 
 
 .PHONY: cwl-corinelc  ## Runs LULC Change with CORINE
 cwl-corinelc:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/lc-v1-corine/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/lc-v1-corine/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/lc-v1-corine/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/lc-v1-corine/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eodh/lulc-change-app.cwl\#land-cover-change \
-		./cwl_files/inputs/land-cover-change/corine.json
+		$(CWL_FILES_DIR)/eodh/lulc-change-app.cwl\#lulc-change \
+		$(CWL_INPUTS_DIR)/land-cover-change/corine.json
 
 
 .PHONY: cwl-globallc  ## Runs LULC Change with ESA GLC
 cwl-globallc:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/lc-v1-glc/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/lc-v1-glc/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/lc-v1-glc/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/lc-v1-glc/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eodh/lulc-change-app.cwl\#land-cover-change \
-		./cwl_files/inputs/land-cover-change/globallc.json
+		$(CWL_FILES_DIR)/eodh/lulc-change-app.cwl\#lulc-change \
+		$(CWL_INPUTS_DIR)/land-cover-change/globallc.json
 
 
 .PHONY: cwl-water-bodies  ## Runs LULC Change with Water Bodies
 cwl-water-bodies:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/lc-v1-wb/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/lc-v1-wb/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/lc-v1-wb/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/lc-v1-wb/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eodh/lulc-change-app.cwl\#land-cover-change \
-		./cwl_files/inputs/land-cover-change/water-bodies.json
+		$(CWL_FILES_DIR)/eodh/lulc-change-app.cwl\#lulc-change \
+		$(CWL_INPUTS_DIR)/land-cover-change/water-bodies.json
 
 
 .PHONY: cwl-water-quality  ## Runs Water Quality app
 cwl-water-quality:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/wq-v1/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/wq-v1/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/wq-v1/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/wq-v1/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eodh/water-quality-app.cwl\#water-quality \
-		./cwl_files/inputs/water-quality/s2.json
+		$(CWL_FILES_DIR)/eodh/water-quality-app.cwl\#water-quality \
+		$(CWL_INPUTS_DIR)/water-quality/s2.json
 
 
 .PHONY: cwl-ard-wq  ## Runs Water Quality app with S2 ARD
 cwl-ard-wq:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/wq-v1-ard/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/wq-v1-ard/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/wq-v1-ard/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/wq-v1-ard/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eodh/water-quality-app.cwl\#water-quality \
-		./cwl_files/inputs/water-quality/ard.json
+		$(CWL_FILES_DIR)/eodh/water-quality-app.cwl\#water-quality \
+		$(CWL_INPUTS_DIR)/water-quality/ard.json
 
 # CWL V2 commands
 
 .PHONY: v2-cwl-ndvi-simple  ## Runs Simple NDVI WF (V2)
 v2-cwl-ndvi-simple:
 	cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
-		--tmpdir-prefix=./data/processed/cwl/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/ndvi-simple/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
+		--tmpdir-prefix=$(CWL_OUTPUT_DIR)/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/ndvi-simple/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eopro/simplest-ndvi.cwl\#simplest-ndvi \
-		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-		--dataset sentinel-2-l2a \
+		$(CWL_FILES_DIR)/eopro/simplest-ndvi.cwl\#simplest-ndvi \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}" \
+		--dataset sentinel-2-l2a-ard \
 		--date_start 2024-03-01 \
 		--date_end 2024-10-10 \
 		--query_clip True \
@@ -308,14 +311,14 @@ v2-cwl-ndvi-simple:
 v2-cwl-ndvi-full:
 	make docker-build
 	cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/ndvi-full/$(shell date --iso-8601=minutes)/tmp/ \
-		--tmpdir-prefix=./data/processed/cwl/ndvi-full/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/ndvi-full/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/ndvi-full/$(shell date --iso-8601=minutes)/tmp/ \
+		--tmpdir-prefix=$(CWL_OUTPUT_DIR)/ndvi-full/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/ndvi-full/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eopro/ndvi-clip-reproject.cwl\#ndvi-clip-repr \
-		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-		--dataset sentinel-2-l2a \
+		$(CWL_FILES_DIR)/eopro/ndvi-clip-reproject.cwl\#ndvi-clip-repr \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}" \
+		--dataset sentinel-2-l2a-ard \
 		--date_start 2024-03-01 \
 		--date_end 2024-10-10 \
 		--query_clip True \
@@ -328,13 +331,13 @@ v2-cwl-ndvi-full:
 .PHONY: v2-cwl-wq  ## Runs WQ WF (V2)
 v2-cwl-wq:
 	cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/wq/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/wq/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/wq/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eopro/water-quality.cwl\#water-quality-wf \
-		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-		--dataset sentinel-2-l2a \
+		$(CWL_FILES_DIR)/eopro/water-quality.cwl\#water-quality-wf \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}" \
+		--dataset sentinel-2-l2a-ard \
 		--date_start 2024-03-01 \
 		--date_end 2024-10-10 \
 		--query_clip True \
@@ -346,13 +349,13 @@ v2-cwl-wq:
 .PHONY: v2-cwl-adv-wq  ## Runs Advanced WQ WF (V2)
 v2-cwl-adv-wq:
 	cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/adv-wq/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/adv-wq/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/adv-wq/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eopro/advanced-water-quality.cwl\#adv-wq \
-		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
-		--dataset sentinel-2-l2a \
+		$(CWL_FILES_DIR)/eopro/advanced-water-quality.cwl\#adv-wq \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}" \
+		--dataset sentinel-2-l2a-ard \
 		--date_start 2024-03-01 \
 		--date_end 2024-10-10 \
 		--query_clip True \
@@ -371,11 +374,11 @@ v2-cwl-adv-wq:
 .PHONY: v2-cwl-lc-glc  ## Runs LCC GLC WF (V2)
 v2-cwl-lc-glc:
 	cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/lc-glc/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/lc-glc/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/lc-glc/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/lc-glc/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
- 		./cwl_files/local/eopro/land-cover.cwl\#lcc \
+ 		$(CWL_FILES_DIR)/eopro/land-cover.cwl\#lcc \
 		--area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
 		--dataset esa-lccci-glcm \
 		--date_start 1994-01-01 \
@@ -387,11 +390,11 @@ v2-cwl-lc-glc:
 .PHONY: v2-cwl-lc-corine  ## Runs LCC Corine WF (V2)
 v2-cwl-lc-corine:
 	cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/lc-corine/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/lc-corine/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/lc-corine/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/lc-corine/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
- 		./cwl_files/local/eopro/land-cover.cwl\#lcc \
+ 		$(CWL_FILES_DIR)/eopro/land-cover.cwl\#lcc \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[14.71116464777238,50.841106893082866],[15.07930529622954,50.841106893082866],[15.07930529622954,51.11754967134041],[14.71116464777238,51.11754967134041],[14.71116464777238,50.841106893082866]]]}" \
 		--dataset clms-corine-lc \
 		--date_start 1980-01-01 \
@@ -403,12 +406,12 @@ v2-cwl-lc-corine:
 .PHONY: v2-cwl-s2-thumb  ## Runs S2 Thumbnail WF (V2)
 v2-cwl-s2-thumb:
 	cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/s2-thumb/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/s2-thumb/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/s2-thumb/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/s2-thumb/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
- 		./cwl_files/local/eopro/s2-thumb.cwl\#s2-thumb \
-		--area "{\"type\":\"Polygon\",\"coordinates\":[[[71.57683969558222,4.278154706539496],[71.96061157730237,4.278154706539496],[71.96061157730237,4.62344048537264],[71.57683969558222,4.62344048537264],[71.57683969558222,4.278154706539496]]]}" \
+ 		$(CWL_FILES_DIR)/eopro/s2-thumb.cwl\#s2-thumb \
+		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}" \
 		--dataset sentinel-2-l2a \
 		--date_start 2024-03-01 \
 		--date_end 2024-10-10 \
@@ -420,11 +423,11 @@ v2-cwl-s2-thumb:
 .PHONY: v2-cwl-s2ard-ndvi  ## Runs NDVI S2 ARD WF (V2)
 v2-cwl-s2ard-ndvi:
 	cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/ndvi-full-adr/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/ndvi-full-adr/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/ndvi-full-adr/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/ndvi-full-adr/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eopro/ndvi-clip-reproject.cwl\#ndvi-clip-repr \
+		$(CWL_FILES_DIR)/eopro/ndvi-clip-reproject.cwl\#ndvi-clip-repr \
 		--area "{\"type\": \"Polygon\", \"coordinates\": [[[-0.511790994620525, 51.44563991163383], [-0.511790994620525, 51.496989653093614], [-0.408954489023431, 51.496989653093614], [-0.408954489023431, 51.44563991163383], [-0.511790994620525, 51.44563991163383]]]}" \
 		--dataset sentinel-2-l2a-ard \
 		--date_start 2023-01-01 \
@@ -439,11 +442,11 @@ v2-cwl-s2ard-ndvi:
 .PHONY: v2-cwl-s2ard-wq  ## Runs WQ S2 ARD WF (V2)
 v2-cwl-s2ard-wq:
 	cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/wq-adr/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/wq-adr/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/wq-adr/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/wq-adr/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/local/eopro/water-quality.cwl\#water-quality-wf \
+		$(CWL_FILES_DIR)/eopro/water-quality.cwl\#water-quality-wf \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.5962507170463245,55.15651250330746],[-2.4458753508353874,55.15651250330746],[-2.4458753508353874,55.23019781679735],[-2.5962507170463245,55.23019781679735],[-2.5962507170463245,55.15651250330746]]]}" \
 		--dataset sentinel-2-l2a-ard \
 		--date_start 2023-01-01 \
@@ -454,51 +457,51 @@ v2-cwl-s2ard-wq:
 		--query_cloud_cover_max 100 \
 		--reproject_epsg EPSG:3857
 
-.PHONY: cwl-v1
-cwl-v1: docker-build cwl-ndvi cwl-ard-ndvi cwl-ard-doc cwl-corinelc cwl-globallc cwl-water-bodies cwl-water-quality cwl-ard-wq cwl-scatter-wq
+.PHONY: cwl-v1  ## Run CWL apps V1
+cwl-v1: docker-build cwl-ard-ndvi cwl-ard-doc cwl-corinelc cwl-globallc cwl-water-bodies cwl-ard-wq cwl-scatter-wq
 
-.PHONY: cwl-v2
+.PHONY: cwl-v2  ## Run CWL apps V2
 cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc v2-cwl-s2-thumb v2-cwl-s2ard-ndvi v2-cwl-s2ard-wq
 
-.PHONY: cwl-all
+.PHONY: cwl-all  ## Run ALL CWL apps
 cwl-all: cwl-v1 cwl-v2
 
-.PHONY: cwl-scatter-wq
+.PHONY: cwl-scatter-wq  ## Runs Scatter WQA
 cwl-scatter-wq:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/scatter-wq/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/scatter-wq/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/scatter-wq/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/scatter-wq/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/scatter-water-quality-app.cwl\#scatter-water-quality \
-		./cwl_files/inputs/water-quality/scatter-ard.json
+		$(CWL_FILES_DIR)/eodh/scatter-water-quality-app.cwl\#scatter-water-quality \
+		$(CWL_INPUTS_DIR)/water-quality/scatter-ard.json
 
-.PHONY: cwl-scatter-rc-ndvi
+.PHONY: cwl-scatter-rc-ndvi  ## Runs Scatter RC NDVI
 cwl-scatter-rc-ndvi:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/scatter-rc-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/scatter-rc-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/scatter-rc-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/scatter-rc-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/scatter-raster-calcluate-app.cwl\#scatter-raster-calculate \
-		./cwl_files/inputs/raster-calcluate/scatter-ndvi.json
+		$(CWL_FILES_DIR)/scatter-raster-calcluate-app.cwl\#scatter-raster-calculate \
+		$(CWL_INPUTS_DIR)/raster-calcluate/scatter-ndvi.json
 
-.PHONY: cwl-scatter-rc-cya
+.PHONY: cwl-scatter-rc-cya  ## Runs Scatter RC CYA
 cwl-scatter-rc-cya:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/scatter-rc-cya/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/scatter-rc-cya/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/scatter-rc-cya/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/scatter-rc-cya/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/scatter-raster-calculate-app.cwl\#scatter-raster-calculate \
-		./cwl_files/inputs/raster-calculate/scatter-cya.json
+		$(CWL_FILES_DIR)/scatter-raster-calculate-app.cwl\#scatter-raster-calculate \
+		$(CWL_INPUTS_DIR)/raster-calculate/scatter-cya.json
 
-.PHONY: cwl-scatter-lcc
+.PHONY: cwl-scatter-lcc  ## Runs Scatter LCC
 cwl-scatter-lcc:
 	@cwltool \
-		--tmp-outdir-prefix=./data/processed/cwl/scatter-lcc/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=./data/processed/cwl/scatter-lcc/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/scatter-lcc/$(shell date --iso-8601=minutes)/tmp/ \
+		--outdir=$(CWL_OUTPUT_DIR)/scatter-lcc/$(shell date --iso-8601=minutes)/outputs/ \
 		--leave-tmpdir \
 		--copy-outputs \
-		./cwl_files/scatter-lulc-change-app.cwl\#scatter-lulc-change \
-		./cwl_files/inputs/land-cover-change/scatter-corine.json
+		$(CWL_FILES_DIR)/scatter-lulc-change-app.cwl\#scatter-lulc-change \
+		$(CWL_INPUTS_DIR)/land-cover-change/scatter-corine.json

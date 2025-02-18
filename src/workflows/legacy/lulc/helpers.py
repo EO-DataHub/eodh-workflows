@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
 from src import consts
+from src.core.settings import current_settings
 
 if TYPE_CHECKING:
     from pystac import Item
@@ -16,20 +17,22 @@ class DataSource:
     collection: str
 
 
+settings = current_settings()
+
 DATASOURCE_LOOKUP = {
     consts.stac.CEDA_ESACCI_LC_LOCAL_NAME: DataSource(
         name=consts.stac.CEDA_ESACCI_LC_LOCAL_NAME,
-        catalog=consts.stac.CEDA_CATALOG_API_ENDPOINT,
+        catalog=f"{settings.eodh.stac_api_endpoint}/catalogs/{consts.stac.CEDA_CATALOG_PATH}",
         collection=consts.stac.CEDA_ESACCI_LC_COLLECTION_NAME,
     ),
     consts.stac.SH_CLMS_CORINELC_LOCAL_NAME: DataSource(
         name=consts.stac.SH_CLMS_CORINELC_LOCAL_NAME,
-        catalog=consts.stac.SH_CATALOG_API_ENDPOINT,
+        catalog=settings.sentinel_hub.stac_api_endpoint,
         collection=consts.stac.SH_CLMS_CORINELC_COLLECTION_NAME,
     ),
     consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME: DataSource(
         name=consts.stac.SH_CLMS_WATER_BODIES_LOCAL_NAME,
-        catalog=consts.stac.SH_CATALOG_API_ENDPOINT,
+        catalog=settings.sentinel_hub.stac_api_endpoint,
         collection=consts.stac.SH_CLMS_WATER_BODIES_COLLECTION_NAME,
     ),
 }

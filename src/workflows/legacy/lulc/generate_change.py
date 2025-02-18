@@ -13,9 +13,9 @@ from requests import HTTPError
 from shapely.geometry import Polygon, mapping
 from tqdm import tqdm
 
-from src import consts
 from src.consts.crs import WGS84
 from src.consts.directories import LOCAL_STAC_OUTPUT_DIR
+from src.core.settings import current_settings
 from src.utils.geom import calculate_geodesic_area, geojson_to_polygon
 from src.utils.logging import get_logger
 from src.utils.raster import (
@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from pystac import Item
 
 _logger = get_logger(__name__)
+settings = current_settings()
 
 
 @click.command(help="Generate LULC change")
@@ -162,16 +163,15 @@ def generate_lulc_change(  # noqa: PLR0914, RUF100
 
 
 def _get_data(source: DataSource, aoi_polygon: Polygon, date_start: str, date_end: str) -> list[Item]:
-    # Sentinel Hub requires authentication
-    token = sh_auth_token() if source.catalog == consts.stac.SH_CATALOG_API_ENDPOINT else None
+    catalog = Client.open(
+        source.catalog,
+        headers={"Authorization": f"Bearer {sh_auth_token()}"}
+        if source.catalog == settings.sentinel_hub.stac_api_endpoint
+        else None,
+    )
 
-    # Connect to STAC API
-    catalog = Client.open(source.catalog, headers={"Authorization": f"Bearer {token}"})
-    stac_collection = source.collection
-
-    # Querying the data
     search = catalog.search(
-        collections=[stac_collection], datetime=f"{date_start}/{date_end}", intersects=mapping(aoi_polygon)
+        collections=[source.collection], datetime=f"{date_start}/{date_end}", intersects=mapping(aoi_polygon)
     )
 
     return sorted(search.items(), key=lambda item: item.datetime)
