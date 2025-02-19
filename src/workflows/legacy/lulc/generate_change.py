@@ -171,7 +171,15 @@ def _get_data(source: DataSource, aoi_polygon: Polygon, date_start: str, date_en
     )
 
     search = catalog.search(
-        collections=[source.collection], datetime=f"{date_start}/{date_end}", intersects=mapping(aoi_polygon)
+        collections=[source.collection],
+        datetime=f"{date_start}/{date_end}",
+        intersects=mapping(aoi_polygon),
+        fields={
+            "include": ["properties.geospatial_lon_resolution", "properties.geospatial_lat_resolution"],
+            "exclude": [],
+        }
+        if source.catalog != settings.sentinel_hub.stac_api_endpoint
+        else None,
     )
 
     return sorted(search.items(), key=lambda item: item.datetime)
