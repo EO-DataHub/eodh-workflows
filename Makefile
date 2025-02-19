@@ -299,7 +299,7 @@ v2-cwl-ndvi-simple:
 		$(CWL_FILES_DIR)/eopro/simplest-ndvi.cwl\#simplest-ndvi \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}" \
 		--dataset sentinel-2-l2a-ard \
-		--date_start 2024-03-01 \
+		--date_start 2023-03-01 \
 		--date_end 2024-10-10 \
 		--query_clip True \
 		--query_limit 2 \
@@ -319,7 +319,7 @@ v2-cwl-ndvi-full:
 		$(CWL_FILES_DIR)/eopro/ndvi-clip-reproject.cwl\#ndvi-clip-repr \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}" \
 		--dataset sentinel-2-l2a-ard \
-		--date_start 2024-03-01 \
+		--date_start 2023-03-01 \
 		--date_end 2024-10-10 \
 		--query_clip True \
 		--query_limit 2 \
@@ -338,7 +338,7 @@ v2-cwl-wq:
 		$(CWL_FILES_DIR)/eopro/water-quality.cwl\#water-quality-wf \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}" \
 		--dataset sentinel-2-l2a-ard \
-		--date_start 2024-03-01 \
+		--date_start 2023-03-01 \
 		--date_end 2024-10-10 \
 		--query_clip True \
 		--query_limit 2 \
@@ -356,7 +356,7 @@ v2-cwl-adv-wq:
 		$(CWL_FILES_DIR)/eopro/advanced-water-quality.cwl\#adv-wq \
 		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}" \
 		--dataset sentinel-2-l2a-ard \
-		--date_start 2024-03-01 \
+		--date_start 2023-03-01 \
 		--date_end 2024-10-10 \
 		--query_clip True \
 		--query_limit 2 \
@@ -403,23 +403,6 @@ v2-cwl-lc-corine:
 		--query_clip True \
 		--reproject_epsg EPSG:3857
 
-.PHONY: v2-cwl-s2-thumb  ## Runs S2 Thumbnail WF (V2)
-v2-cwl-s2-thumb:
-	cwltool \
-		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/s2-thumb/$(shell date --iso-8601=minutes)/tmp/ \
-		--outdir=$(CWL_OUTPUT_DIR)/s2-thumb/$(shell date --iso-8601=minutes)/outputs/ \
-		--leave-tmpdir \
-		--copy-outputs \
- 		$(CWL_FILES_DIR)/eopro/s2-thumb.cwl\#s2-thumb \
-		--area "{\"type\":\"Polygon\",\"coordinates\":[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}" \
-		--dataset sentinel-2-l2a \
-		--date_start 2024-03-01 \
-		--date_end 2024-10-10 \
-		--query_clip True \
-		--query_limit 2 \
-		--query_cloud_cover_min 0 \
-		--query_cloud_cover_max 100
-
 .PHONY: v2-cwl-s2ard-ndvi  ## Runs NDVI S2 ARD WF (V2)
 v2-cwl-s2ard-ndvi:
 	cwltool \
@@ -461,7 +444,7 @@ v2-cwl-s2ard-wq:
 cwl-v1: docker-build cwl-ard-ndvi cwl-ard-doc cwl-corinelc cwl-globallc cwl-water-bodies cwl-ard-wq cwl-scatter-wq
 
 .PHONY: cwl-v2  ## Run CWL apps V2
-cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc v2-cwl-s2-thumb v2-cwl-s2ard-ndvi v2-cwl-s2ard-wq
+cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc v2-cwl-s2ard-ndvi v2-cwl-s2ard-wq
 
 .PHONY: cwl-all  ## Run ALL CWL apps
 cwl-all: cwl-v1 cwl-v2
