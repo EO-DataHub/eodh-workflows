@@ -24,7 +24,7 @@ define PRINT_HELP_PYSCRIPT
 import re, sys
 
 for line in sys.stdin:
-	match = re.match(r'^\.PHONY: ([0-9a-zA-Z_-]+).*?## (.*)$', line)
+	match = re.match(r'^\.PHONY: ([0-9a-zA-Z_-]+).*?## (.*)$$', line)
 	if match:
 		target, help = match.groups()
 		print("%-45s - %s" % (target, help))
@@ -33,7 +33,7 @@ export PRINT_HELP_PYSCRIPT
 
 .PHONY: help  ## Prints help message
 help:
-	@python -c "$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
 # Git repo initialization
 
