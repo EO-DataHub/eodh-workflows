@@ -659,7 +659,7 @@ class CyaCells(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return ["blue", "green", "red", "scl"] if "scl" in item.assets else ["blue", "green", "nir", "swir16"]
+        return ["blue", "green", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16"]
 
     @staticmethod
     def calculate_index(
