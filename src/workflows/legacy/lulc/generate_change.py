@@ -9,6 +9,7 @@ import click
 import numpy as np
 from pystac import Item
 from pystac_client import Client
+from requests import HTTPError
 from shapely.geometry import Polygon, mapping
 from tqdm import tqdm
 
@@ -90,7 +91,11 @@ def generate_lulc_change(  # noqa: PLR0914, RUF100
         item_id = str(uuid4())
 
         # Build array
-        raster_arr = build_raster_array(source=source_ds, item=item, bbox=aoi_polygon.bounds)
+        try:
+            raster_arr = build_raster_array(source=source_ds, item=item, bbox=aoi_polygon.bounds)
+        except HTTPError:
+            _logger.exception("Failed to build raster array. Skipping item: %s", item.id)
+            continue
 
         bounds_polygon = get_raster_bounds(raster_arr)
         area_m2 = calculate_geodesic_area(bounds_polygon)

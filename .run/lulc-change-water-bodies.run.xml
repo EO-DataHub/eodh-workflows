@@ -25,7 +25,7 @@
       </ENTRIES>
     </EXTENSION>
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/workflows/entrypoint.py" />
-    <option name="PARAMETERS" value="lulc change --source=clms-water-bodies --aoi=&quot;{\&quot;type\&quot;: \&quot;Polygon\&quot;,\&quot;coordinates\&quot;: [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}&quot; --date_start=2006-01-01 --date_end=2018-12-31 --output_dir=data/processed/eodh/lulc-water-bodies" />
+    <option name="PARAMETERS" value="lulc change --source=clms-water-bodies --aoi=&quot;{\&quot;type\&quot;:\&quot;Polygon\&quot;,\&quot;coordinates\&quot;:[[[-0.5450125294959283,51.42405499736549],[-0.4505478102004266,51.42405499736549],[-0.4505478102004266,51.48256236305488],[-0.5450125294959283,51.48256236305488],[-0.5450125294959283,51.42405499736549]]]}&quot; --date_start=2020-01-01T00:00:00+00:00 --date_end=2025-02-19T00:00:00+00:00 --output_dir=data/processed/eodh/lulc-water-bodies" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
