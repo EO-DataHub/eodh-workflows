@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 _logger = get_logger(__name__)
 SCL_WATER_CLASS = 6
 SWM_THRESHOLD = 0.9
+NDMI_WATER_THRESHOLD = 0.4
 
 EARTH_SEARCH_AWS_ASSET_LOOKUP = {
     "aot": "AOT",
@@ -41,6 +42,15 @@ EARTH_SEARCH_AWS_ASSET_LOOKUP = {
 
 def rescale(data: xarray.DataArray, scale: float = 1e-4, offset: float = -0.1) -> xarray.DataArray:
     return data * scale + offset
+
+
+def resolve_rescale_params(collection_name: str, item_datetime: datetime) -> tuple[float, float]:
+    if collection_name == "sentinel-2-l2a":  # EarthSearch AWS already uses rescale info in STAC metadata
+        return 1, 0
+    if collection_name == "sentinel2_ard":
+        return 1e-4, 0
+    # Rescale - keep in mind baseline change on 25th of Jan. 2022
+    return (1e-4, -0.1) if item_datetime > datetime(2022, 1, 25, tzinfo=timezone.utc) else (1e-4, 0)
 
 
 def sentinel_water_mask_from_scl(scl_agg: xarray.DataArray) -> np.ndarray:  # type: ignore[type-arg]
@@ -66,15 +76,22 @@ def sentinel_water_mask_from_bands(
     return erosion(swm, footprint_rectangle((2, 2)))  # type: ignore[no-any-return]
 
 
-def water_mask_from_arr(raster_arr: xarray.DataArray) -> np.ndarray[Any, Any]:
+def ndmi_water_mask(
+    green: xarray.DataArray,
+    swir16: xarray.DataArray,
+    threshold: float = NDMI_WATER_THRESHOLD,
+) -> np.ndarray[Any, Any]:
+    ndmi_arr = (green - swir16) / (swir16 + green + EPS)
+    return np.where(ndmi_arr >= threshold, 1, 0)
+
+
+def water_mask_from_arr(raster_arr: xarray.DataArray, scale: float = 1.0, offset: float = 0.0) -> np.ndarray[Any, Any]:
     return (
         sentinel_water_mask_from_scl(raster_arr.sel(band="scl"))
         if "scl" in raster_arr.band
-        else sentinel_water_mask_from_bands(
-            blue=raster_arr.sel(band="blue"),
-            green=raster_arr.sel(band="green"),
-            nir=raster_arr.sel(band="nir"),
-            swir16=raster_arr.sel(band="swir16"),
+        else ndmi_water_mask(
+            green=rescale(raster_arr.sel(band="green"), scale=scale, offset=offset),
+            swir16=rescale(raster_arr.sel(band="swir16"), scale=scale, offset=offset),
         )
     )
 
@@ -377,11 +394,30 @@ def doc(
     return result_arr.where(water_mask).rio.write_crs(crs)
 
 
-def resolve_rescale_params(collection_name: str, item_datetime: datetime) -> tuple[float, float]:
-    if collection_name != "sentinel-2-l2a":  # EarthSearch AWS already uses rescale info in STAC metadata
-        return 1, 0
-    # Rescale - keep in mind baseline change on 25th of Jan. 2022
-    return (1e-4, -0.1) if item_datetime > datetime(2022, 1, 25, tzinfo=timezone.utc) else (1e-4, 0)
+def ndwi(
+    green_agg: xarray.DataArray,
+    nir_agg: xarray.DataArray,
+    crs: int | str | CRS,
+) -> xarray.DataArray:
+    """Normalized Difference Water Index (NDWI).
+
+    Args:
+        green_agg: Green band (Sentinel-2 B03) data array with reflectance data.
+        nir_agg: NIR band (Sentinel-2 B08) data array with reflectance data.
+        crs: CRS to write to the output array.
+
+    Returns:
+        NDWI array.
+
+    """
+    data = (green_agg - nir_agg) / (nir_agg + green_agg + EPS)
+    return xarray.DataArray(
+        data,
+        name="ndwi",
+        coords=nir_agg.coords,
+        dims=nir_agg.dims,
+        attrs=nir_agg.attrs,
+    ).rio.write_crs(crs)
 
 
 class IndexCalculator(abc.ABC):
@@ -548,7 +584,7 @@ class NDWI(IndexCalculator):
     ) -> xarray.DataArray:
         nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
         green = rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset)
-        return ndvi(nir_agg=green, red_agg=nir, name="ndwi").rio.write_crs(raster_arr.rio.crs)
+        return ndwi(nir_agg=nir, green_agg=green, crs=raster_arr.rio.crs)
 
 
 class SAVI(IndexCalculator):
@@ -659,7 +695,11 @@ class CyaCells(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return ["blue", "green", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16"]
+        return (
+            ["blue", "green", "red", "scl"]
+            if "scl" in item.assets
+            else ["blue", "green", "red", "nir", "swir16", "cloud"]
+        )
 
     @staticmethod
     def calculate_index(
@@ -667,7 +707,7 @@ class CyaCells(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr)
+        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = cya_cells_ml(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             green_agg=rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset),
@@ -708,7 +748,7 @@ class CyaMg(IndexCalculator):
         return (
             ["red", "rededge1", "scl"]
             if "scl" in item.assets
-            else ["blue", "green", "red", "rededge1", "nir", "swir16"]
+            else ["blue", "green", "red", "rededge1", "nir", "swir16", "cloud"]
         )
 
     @staticmethod
@@ -717,7 +757,7 @@ class CyaMg(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr)
+        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = cya_mg_m3(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
@@ -757,7 +797,7 @@ class ChlACoastal(IndexCalculator):
         return (
             ["red", "rededge1", "scl"]
             if "scl" in item.assets
-            else ["blue", "green", "red", "rededge1", "nir", "swir16"]
+            else ["blue", "green", "red", "rededge1", "nir", "swir16", "cloud"]
         )
 
     @staticmethod
@@ -766,7 +806,7 @@ class ChlACoastal(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr)
+        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = chl_a_coastal(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
@@ -803,7 +843,7 @@ class ChlALow(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return ["blue", "green", "scl"] if "scl" in item.assets else ["blue", "green", "nir", "swir16"]
+        return ["blue", "green", "scl"] if "scl" in item.assets else ["blue", "green", "nir", "swir16", "cloud"]
 
     @staticmethod
     def calculate_index(
@@ -811,16 +851,7 @@ class ChlALow(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = (
-            sentinel_water_mask_from_scl(raster_arr.sel(band="scl"))
-            if "scl" in raster_arr.band
-            else sentinel_water_mask_from_bands(
-                blue=raster_arr.sel(band="blue"),
-                green=raster_arr.sel(band="green"),
-                nir=raster_arr.sel(band="nir"),
-                swir16=raster_arr.sel(band="swir16"),
-            )
-        )
+        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = chl_a_low(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             green_agg=rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset),
@@ -869,7 +900,7 @@ class ChlAHigh(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr)
+        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = chl_a_high(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
@@ -906,7 +937,11 @@ class Turbidity(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return ["blue", "rededge1", "scl"] if "scl" in item.assets else ["blue", "green", "rededge1", "nir", "swir16"]
+        return (
+            ["blue", "rededge1", "scl"]
+            if "scl" in item.assets
+            else ["blue", "green", "rededge1", "nir", "swir16", "cloud"]
+        )
 
     @staticmethod
     def calculate_index(
@@ -914,7 +949,7 @@ class Turbidity(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr)
+        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = turb(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
@@ -951,7 +986,7 @@ class DOC(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return ["green", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16"]
+        return ["green", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16", "cloud"]
 
     @staticmethod
     def calculate_index(
@@ -959,7 +994,7 @@ class DOC(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr)
+        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = doc(
             green_agg=rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset),
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
@@ -996,7 +1031,7 @@ class CDOM(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return ["blue", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16"]
+        return ["blue", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16", "cloud"]
 
     @staticmethod
     def calculate_index(
@@ -1004,7 +1039,7 @@ class CDOM(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr)
+        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = cdom(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
