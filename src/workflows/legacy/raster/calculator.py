@@ -194,6 +194,7 @@ def query_stac(
     date_start: str,
     stac_collection: str,
     limit: int | None = None,
+    max_cc: float | None = None,
 ) -> list[pystac.Item]:
     valid_collections = {"sentinel-2-l2a", "sentinel-2-l2a-ard"}
     if stac_collection not in valid_collections:
@@ -216,6 +217,8 @@ def query_stac(
         filter_spec["args"].append({"op": ">=", "args": [{"property": "datetime"}, date_start]})  # type: ignore[attr-defined]
     if date_end:
         filter_spec["args"].append({"op": "<=", "args": [{"property": "datetime"}, date_end]})  # type: ignore[attr-defined]
+    if max_cc is not None:
+        filter_spec["args"].append({"op": "<=", "args": [{"property": "properties.eo:cloud_cover"}, max_cc]})  # type: ignore[attr-defined]
 
     search = catalog.search(
         collections=[DATASET_TO_COLLECTION_LOOKUP[stac_collection]],
