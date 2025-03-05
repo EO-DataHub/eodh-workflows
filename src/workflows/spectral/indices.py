@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import xarray
-from skimage.morphology import closing, erosion, footprint_rectangle
 from xrspatial.multispectral import evi, ndvi, savi
 
 from src.consts.compute import EPS
@@ -20,7 +19,10 @@ if TYPE_CHECKING:
 _logger = get_logger(__name__)
 SCL_WATER_CLASS = 6
 SWM_THRESHOLD = 0.9
-NDMI_WATER_THRESHOLD = 0.4
+NDMI_WATER_THRESHOLD = 0.2
+NDWI_WATER_THRESHOLD = -0.15
+ARD_CLEAR_PIXELS = 0
+SCL_INVALID_PIXELS = [0, 1, 3, 8, 9, 10, 11]
 
 EARTH_SEARCH_AWS_ASSET_LOOKUP = {
     "aot": "AOT",
@@ -53,27 +55,16 @@ def resolve_rescale_params(collection_name: str, item_datetime: datetime) -> tup
     return (1e-4, -0.1) if item_datetime > datetime(2022, 1, 25, tzinfo=timezone.utc) else (1e-4, 0)
 
 
-def sentinel_water_mask_from_scl(scl_agg: xarray.DataArray) -> np.ndarray:  # type: ignore[type-arg]
+def sentinel_water_mask_from_scl(scl_agg: xarray.DataArray) -> np.ndarray[Any, Any]:  # type: ignore[type-arg]
     return np.where(scl_agg == SCL_WATER_CLASS, 1, 0)
 
 
-def sentinel_water_mask_from_bands(
-    blue: xarray.DataArray,
-    green: xarray.DataArray,
-    nir: xarray.DataArray,
-    swir16: xarray.DataArray,
-    threshold: float = SWM_THRESHOLD,
-) -> np.ndarray[Any, Any]:
-    """SWM from bands.
+def ard_cloud_mask(cloud_agg: xarray.DataArray) -> np.ndarray[Any, Any]:
+    return np.where(cloud_agg == ARD_CLEAR_PIXELS, 0, 1)
 
-    Notes:
-        The data should not be rescaled.
 
-    """
-    swm = (blue + green) / (nir + swir16)
-    swm = np.where(swm >= threshold, 1, 0)
-    swm = closing(swm, footprint_rectangle((5, 5)))
-    return erosion(swm, footprint_rectangle((2, 2)))  # type: ignore[no-any-return]
+def ard_clear_pixels_mask(cloud_agg: xarray.DataArray) -> np.ndarray[Any, Any]:
+    return np.where(cloud_agg == ARD_CLEAR_PIXELS, 1, 0)
 
 
 def ndmi_water_mask(
@@ -81,18 +72,61 @@ def ndmi_water_mask(
     swir16: xarray.DataArray,
     threshold: float = NDMI_WATER_THRESHOLD,
 ) -> np.ndarray[Any, Any]:
-    ndmi_arr = (green - swir16) / (swir16 + green + EPS)
+    ndmi_arr = ndmi(green_agg=green, swir_agg=swir16, crs=green.rio.crs)
     return np.where(ndmi_arr >= threshold, 1, 0)
+
+
+def ndmi(
+    green_agg: xarray.DataArray,
+    swir_agg: xarray.DataArray,
+    crs: int | str | CRS,
+) -> xarray.DataArray:
+    ndmi_arr = (green_agg - swir_agg) / (swir_agg + green_agg + EPS)
+    return xarray.DataArray(
+        ndmi_arr,
+        name="ndmi",
+        coords=green_agg.coords,
+        dims=green_agg.dims,
+        attrs=green_agg.attrs,
+    ).rio.write_crs(crs)
+
+
+def ndwi_water_mask(
+    green: xarray.DataArray,
+    nir: xarray.DataArray,
+    threshold: float = NDWI_WATER_THRESHOLD,
+) -> np.ndarray[Any, Any]:
+    ndwi_arr = (green - nir) / (green + nir + EPS)
+    return np.where(ndwi_arr >= threshold, 1, 0)
+
+
+def ratio_water_mask(
+    blue_agg: xarray.DataArray, swir_agg: xarray.DataArray, threshold: float = 2.0
+) -> np.ndarray[Any, Any]:
+    ratio = blue_agg / swir_agg
+    return np.where(ratio > threshold, 1, 0)
 
 
 def water_mask_from_arr(raster_arr: xarray.DataArray, scale: float = 1.0, offset: float = 0.0) -> np.ndarray[Any, Any]:
     return (
         sentinel_water_mask_from_scl(raster_arr.sel(band="scl"))
         if "scl" in raster_arr.band
-        else ndmi_water_mask(
-            green=rescale(raster_arr.sel(band="green"), scale=scale, offset=offset),
-            swir16=rescale(raster_arr.sel(band="swir16"), scale=scale, offset=offset),
+        else ratio_water_mask(
+            blue_agg=rescale(raster_arr.sel(band="blue"), scale=scale, offset=offset),
+            swir_agg=rescale(raster_arr.sel(band="swir16"), scale=scale, offset=offset),
         )
+    )
+
+
+def sentinel_cloud_mask_from_scl(scl_agg: xarray.DataArray) -> np.ndarray[Any, Any]:
+    return np.where(scl_agg.isin(SCL_INVALID_PIXELS), 0, 1)
+
+
+def cloud_mask_from_arr(raster_arr: xarray.DataArray) -> np.ndarray[Any, Any]:
+    return (
+        sentinel_cloud_mask_from_scl(raster_arr.sel(band="scl"))
+        if "scl" in raster_arr.band
+        else ard_cloud_mask(raster_arr.sel(band="cloud"))
     )
 
 
@@ -113,7 +147,6 @@ def cya_cells_ml(
     blue_agg: xarray.DataArray,
     green_agg: xarray.DataArray,
     red_agg: xarray.DataArray,
-    water_mask: np.ndarray,  # type: ignore[type-arg]
     crs: int | str | CRS,
 ) -> xarray.DataArray:
     """Calculates Cyanobacteria in 1e6 of cells / mL.
@@ -128,7 +161,6 @@ def cya_cells_ml(
         blue_agg: Blue band (Sentinel-2 B02) data array with reflectance data.
         green_agg: Green band (Sentinel-2 B03) data array with reflectance data.
         red_agg: Red band (Sentinel-2 B04) data array with reflectance data.
-        water_mask: Water mask to mask out land and clouds.
         crs: CRS to write to the output array.
 
     Returns:
@@ -136,20 +168,18 @@ def cya_cells_ml(
 
     """
     data = 115_530.31 * ((green_agg * red_agg / (blue_agg + EPS)) ** 2.38)
-    result_arr = xarray.DataArray(
+    return xarray.DataArray(
         data,
         name="cya",
         coords=red_agg.coords,
         dims=red_agg.dims,
         attrs=red_agg.attrs,
-    )
-    return result_arr.where(water_mask).rio.write_crs(crs)
+    ).rio.write_crs(crs)
 
 
 def cya_mg_m3(
     red_agg: xarray.DataArray,
     red_edge_agg: xarray.DataArray,
-    water_mask: np.ndarray,  # type: ignore[type-arg]
     crs: int | str | CRS,
 ) -> xarray.DataArray:
     """Calculates Cyanobacteria in mg / m3.
@@ -163,7 +193,6 @@ def cya_mg_m3(
     Arguments:
         red_agg: Red band (Sentinel-2 B04) data array with reflectance data.
         red_edge_agg: Red band (Sentinel-2 B05) data array with reflectance data.
-        water_mask: Water mask to mask out land and clouds.
         crs: CRS to write to the output array.
 
     Returns:
@@ -171,20 +200,18 @@ def cya_mg_m3(
 
     """
     data = 21.554 * ((red_edge_agg / (red_agg + EPS)) ** 3.4791)
-    result_arr = xarray.DataArray(
+    return xarray.DataArray(
         data,
         name="cya",
         coords=red_agg.coords,
         dims=red_agg.dims,
         attrs=red_agg.attrs,
-    )
-    return result_arr.where(water_mask).rio.write_crs(crs)
+    ).rio.write_crs(crs)
 
 
 def chl_a_high(
     red_agg: xarray.DataArray,
     red_edge_agg: xarray.DataArray,
-    water_mask: np.ndarray,  # type: ignore[type-arg]
     crs: int | str | CRS,
 ) -> xarray.DataArray:
     """Calculates Chlorophyll-Alpha for high values > 5 mg / m3.
@@ -198,7 +225,6 @@ def chl_a_high(
     Arguments:
         red_agg: Red band (Sentinel-2 B04) data array with reflectance data.
         red_edge_agg: Red band (Sentinel-2 B05) data array with reflectance data.
-        water_mask: Water mask to mask out land and clouds.
         crs: CRS to write to the output array.
 
     Returns:
@@ -206,20 +232,18 @@ def chl_a_high(
 
     """
     data = 19.866 * ((red_edge_agg / (red_agg + EPS)) ** 2.3051)
-    result_arr = xarray.DataArray(
+    return xarray.DataArray(
         data,
         name="chl-a-high",
         coords=red_edge_agg.coords,
         dims=red_edge_agg.dims,
         attrs=red_edge_agg.attrs,
-    )
-    return result_arr.where(water_mask).rio.write_crs(crs)
+    ).rio.write_crs(crs)
 
 
 def chl_a_low(
     blue_agg: xarray.DataArray,
     green_agg: xarray.DataArray,
-    water_mask: np.ndarray,  # type: ignore[type-arg]
     crs: int | str | CRS,
 ) -> xarray.DataArray:
     """Calculates Chlorophyll-Alpha for low values < 5 mg / m3.
@@ -233,7 +257,6 @@ def chl_a_low(
     Arguments:
         blue_agg: Blue band (Sentinel-2 B02) data array with reflectance data.
         green_agg: Green band (Sentinel-2 B03) data array with reflectance data.
-        water_mask: Water mask to mask out land and clouds.
         crs: CRS to write to the output array.
 
     Returns:
@@ -241,20 +264,18 @@ def chl_a_low(
 
     """
     data = np.exp(-2.4792 * (np.log10(np.maximum(green_agg, blue_agg) / (green_agg + EPS))) - 0.0389)
-    result_arr = xarray.DataArray(
+    return xarray.DataArray(
         data,
         name="chl-a-low",
         coords=blue_agg.coords,
         dims=blue_agg.dims,
         attrs=blue_agg.attrs,
-    )
-    return result_arr.where(water_mask).rio.write_crs(crs)
+    ).rio.write_crs(crs)
 
 
 def chl_a_coastal(
     red_agg: xarray.DataArray,
     red_edge_agg: xarray.DataArray,
-    water_mask: np.ndarray,  # type: ignore[type-arg]
     crs: int | str | CRS,
 ) -> xarray.DataArray:
     """Calculates Chlorophyll-Alpha for coastal areas based on NDCI in mg / m3.
@@ -268,7 +289,6 @@ def chl_a_coastal(
     Arguments:
         red_agg: Red band (Sentinel-2 B04) data array with reflectance data.
         red_edge_agg: Red Edge band (Sentinel-2 B05) data array with reflectance data.
-        water_mask: Water mask to mask out land and clouds.
         crs: CRS to write to the output array.
 
     Returns:
@@ -281,20 +301,18 @@ def chl_a_coastal(
         + 194.325 * (red_edge_agg - red_agg) / ((red_edge_agg + red_agg) ** 2 + EPS)
     )
     data = np.maximum(data, 0)
-    result_arr = xarray.DataArray(
+    return xarray.DataArray(
         data,
         name="chl-a-coastal",
         coords=red_agg.coords,
         dims=red_agg.dims,
         attrs=red_agg.attrs,
-    )
-    return result_arr.where(water_mask).rio.write_crs(crs)
+    ).rio.write_crs(crs)
 
 
 def turb(
     blue_agg: xarray.DataArray,
     red_edge_agg: xarray.DataArray,
-    water_mask: np.ndarray,  # type: ignore[type-arg]
     crs: int | str | CRS,
 ) -> xarray.DataArray:
     """Water Turbidity index in NTU.
@@ -308,7 +326,6 @@ def turb(
     Args:
         blue_agg: Blue band (Sentinel-2 B02) data array with reflectance data.
         red_edge_agg: Red edge band (Sentinel-2 B05) data array with reflectance data.
-        water_mask: Water mask to mask out land and clouds.
         crs: CRS to write to the output array.
 
     Returns:
@@ -316,20 +333,18 @@ def turb(
 
     """
     data = 194.79 * (red_edge_agg * (red_edge_agg / (blue_agg + EPS))) + 0.9061
-    result_arr = xarray.DataArray(
+    return xarray.DataArray(
         data,
         name="turb",
         coords=red_edge_agg.coords,
         dims=red_edge_agg.dims,
         attrs=red_edge_agg.attrs,
-    )
-    return result_arr.where(water_mask).rio.write_crs(crs)
+    ).rio.write_crs(crs)
 
 
 def cdom(
     blue_agg: xarray.DataArray,
     red_agg: xarray.DataArray,
-    water_mask: np.ndarray,  # type: ignore[type-arg]
     crs: int | str | CRS,
 ) -> xarray.DataArray:
     """Colored Dissolved Organic Matter index - CDOM in ug / L.
@@ -343,27 +358,24 @@ def cdom(
     Args:
         blue_agg: Blue band (Sentinel-2 B02) data array with reflectance data.
         red_agg: Red band (Sentinel-2 B04) data array with reflectance data.
-        water_mask: Water mask to mask out land and clouds.
         crs: CRS to write to the output array.
 
     Returns:
         CDOM in ug / L.
     """
     data = 2.4072 * (red_agg / (blue_agg + EPS)) + 0.0709
-    result_arr = xarray.DataArray(
+    return xarray.DataArray(
         data,
         name="cdom",
         coords=blue_agg.coords,
         dims=blue_agg.dims,
         attrs=blue_agg.attrs,
-    )
-    return result_arr.where(water_mask).rio.write_crs(crs)
+    ).rio.write_crs(crs)
 
 
 def doc(
     green_agg: xarray.DataArray,
     red_agg: xarray.DataArray,
-    water_mask: np.ndarray,  # type: ignore[type-arg]
     crs: int | str | CRS,
 ) -> xarray.DataArray:
     """Dissolved Organic Carbon index - DOC in mg / L.
@@ -377,21 +389,19 @@ def doc(
     Args:
         green_agg: Red band (Sentinel-2 B03) data array with reflectance data.
         red_agg: Red band (Sentinel-2 B04) data array with reflectance data.
-        water_mask: Water mask to mask out land and clouds.
         crs: CRS to write to the output array.
 
     Returns:
         DOC in mg / L.
     """
     data = 432 * np.exp(-2.24 * (green_agg / (red_agg + EPS)) + EPS)
-    result_arr = xarray.DataArray(
+    return xarray.DataArray(
         data,
         name="doc",
         coords=red_agg.coords,
         dims=red_agg.dims,
         attrs=red_agg.attrs,
-    )
-    return result_arr.where(water_mask).rio.write_crs(crs)
+    ).rio.write_crs(crs)
 
 
 def ndwi(
@@ -587,6 +597,46 @@ class NDWI(IndexCalculator):
         return ndwi(nir_agg=nir, green_agg=green, crs=raster_arr.rio.crs)
 
 
+class NDMI(IndexCalculator):
+    @property
+    def name(self) -> str:
+        return "ndmi"
+
+    @property
+    def full_name(self) -> str:
+        return "Normalized Difference Moisture Index (NDWI)"
+
+    @property
+    def typical_range(self) -> tuple[float, float, int]:
+        return -1.0, 1.0, 20
+
+    @property
+    def units(self) -> str:
+        return "NDMI"
+
+    @property
+    def mpl_colormap(self) -> tuple[str, bool]:
+        return "RdBu", False
+
+    @property
+    def js_colormap(self) -> tuple[str, bool]:
+        return "RdBu", False
+
+    @staticmethod
+    def collection_assets_to_use(item: pystac.Item) -> list[str]:  # noqa: ARG004
+        return ["green", "swir16"]
+
+    @staticmethod
+    def calculate_index(
+        raster_arr: xarray.DataArray,
+        rescale_factor: float = 1e-4,
+        rescale_offset: float = -0.1,
+    ) -> xarray.DataArray:
+        swir = rescale(raster_arr.sel(band="swir16"), scale=rescale_factor, offset=rescale_offset)
+        green = rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset)
+        return ndmi(swir_agg=swir, green_agg=green, crs=raster_arr.rio.crs)
+
+
 class SAVI(IndexCalculator):
     @property
     def name(self) -> str:
@@ -695,11 +745,7 @@ class CyaCells(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return (
-            ["blue", "green", "red", "scl"]
-            if "scl" in item.assets
-            else ["blue", "green", "red", "nir", "swir16", "cloud"]
-        )
+        return ["blue", "green", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16"]
 
     @staticmethod
     def calculate_index(
@@ -707,12 +753,10 @@ class CyaCells(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = cya_cells_ml(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             green_agg=rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset),
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
-            water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
         return idx.where(np.isfinite(idx), np.nan)
@@ -748,7 +792,7 @@ class CyaMg(IndexCalculator):
         return (
             ["red", "rededge1", "scl"]
             if "scl" in item.assets
-            else ["blue", "green", "red", "rededge1", "nir", "swir16", "cloud"]
+            else ["blue", "green", "red", "rededge1", "nir", "swir16"]
         )
 
     @staticmethod
@@ -757,11 +801,9 @@ class CyaMg(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = cya_mg_m3(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
-            water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
         return idx.where(np.isfinite(idx), np.nan)
@@ -797,7 +839,7 @@ class ChlACoastal(IndexCalculator):
         return (
             ["red", "rededge1", "scl"]
             if "scl" in item.assets
-            else ["blue", "green", "red", "rededge1", "nir", "swir16", "cloud"]
+            else ["blue", "green", "red", "rededge1", "nir", "swir16"]
         )
 
     @staticmethod
@@ -806,11 +848,9 @@ class ChlACoastal(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = chl_a_coastal(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
-            water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
         return idx.where(np.isfinite(idx), np.nan)
@@ -843,7 +883,7 @@ class ChlALow(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return ["blue", "green", "scl"] if "scl" in item.assets else ["blue", "green", "nir", "swir16", "cloud"]
+        return ["blue", "green", "scl"] if "scl" in item.assets else ["blue", "green", "nir", "swir16"]
 
     @staticmethod
     def calculate_index(
@@ -851,11 +891,9 @@ class ChlALow(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = chl_a_low(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             green_agg=rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset),
-            water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
         return idx.where(np.isfinite(idx), np.nan)
@@ -900,11 +938,9 @@ class ChlAHigh(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = chl_a_high(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
-            water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
         return idx.where(np.isfinite(idx), np.nan)
@@ -937,11 +973,7 @@ class Turbidity(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return (
-            ["blue", "rededge1", "scl"]
-            if "scl" in item.assets
-            else ["blue", "green", "rededge1", "nir", "swir16", "cloud"]
-        )
+        return ["blue", "rededge1", "scl"] if "scl" in item.assets else ["blue", "green", "rededge1", "nir", "swir16"]
 
     @staticmethod
     def calculate_index(
@@ -949,11 +981,9 @@ class Turbidity(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = turb(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             red_edge_agg=rescale(raster_arr.sel(band="rededge1"), scale=rescale_factor, offset=rescale_offset),
-            water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
         return idx.where(np.isfinite(idx), np.nan)
@@ -986,7 +1016,7 @@ class DOC(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return ["green", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16", "cloud"]
+        return ["green", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16"]
 
     @staticmethod
     def calculate_index(
@@ -994,11 +1024,9 @@ class DOC(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = doc(
             green_agg=rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset),
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
-            water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
         return idx.where(np.isfinite(idx), np.nan)
@@ -1031,7 +1059,7 @@ class CDOM(IndexCalculator):
 
     @staticmethod
     def collection_assets_to_use(item: pystac.Item) -> list[str]:
-        return ["blue", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16", "cloud"]
+        return ["blue", "red", "scl"] if "scl" in item.assets else ["blue", "green", "red", "nir", "swir16"]
 
     @staticmethod
     def calculate_index(
@@ -1039,11 +1067,9 @@ class CDOM(IndexCalculator):
         rescale_factor: float = 1e-4,
         rescale_offset: float = -0.1,
     ) -> xarray.DataArray:
-        water_mask = water_mask_from_arr(raster_arr, scale=rescale_factor, offset=rescale_offset)
         idx = cdom(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
-            water_mask=water_mask,
             crs=raster_arr.rio.crs,
         )
         return idx.where(np.isfinite(idx), np.nan)

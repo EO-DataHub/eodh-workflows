@@ -14,6 +14,7 @@ import rasterio
 import requests
 import rioxarray
 import stackstac
+import xarray
 from distributed import Client as DistributedClient, LocalCluster
 from pystac import Item
 from rasterio.mask import mask
@@ -31,8 +32,6 @@ from src.utils.stac import prepare_stac_asset
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    import xarray
 
 
 _logger = get_logger(__name__)
@@ -401,15 +400,45 @@ def prepare_s2_ard_data_array(
 ) -> xarray.DataArray:
     if aoi is None:
         return _prepare_s2_ard_data_array_no_clip(item)
-    return _prepare_s2_ard_data_array_clip(item, aoi)
+    cog = _prepare_s2_ard_data_array_clip(
+        item,
+        aoi=aoi,
+        asset_name="cog",
+        assign_coords={
+            "band": [
+                "blue",
+                "green",
+                "red",
+                "rededge1",
+                "rededge2",
+                "rededge3",
+                "nir",
+                "nir08",
+                "swir16",
+                "swir22",
+            ]
+        },
+    )
+    cloud = _prepare_s2_ard_data_array_clip(
+        item,
+        aoi=aoi,
+        asset_name="cloud",
+        assign_coords={"band": ["cloud"]},
+    )
+    return xarray.concat([cog, cloud], dim="band")
 
 
 @retry(tries=3, delay=3, backoff=2)
-def _prepare_s2_ard_data_array_clip(item: pystac.Item, aoi: dict[str, Any]) -> xarray.DataArray:
+def _prepare_s2_ard_data_array_clip(
+    item: pystac.Item,
+    aoi: dict[str, Any],
+    asset_name: str,
+    assign_coords: dict[str, list[str]],
+) -> xarray.DataArray:
     # Load AOI geometry
     aoi_geometry = shape(aoi)
     geo = gpd.GeoDataFrame({"geometry": aoi_geometry}, index=[0], crs="EPSG:4326")
-    asset = item.assets["cog"]
+    asset = item.assets[asset_name]
 
     # Use Rasterio to open the remote GeoTIFF
     src: rasterio.io.DatasetReader
@@ -431,35 +460,24 @@ def _prepare_s2_ard_data_array_clip(item: pystac.Item, aoi: dict[str, Any]) -> x
     # Save clipped raster
     with tempfile.TemporaryDirectory() as tmpdir_name:
         dest: rasterio.io.DatasetWriter
-        with rasterio.open(Path(tmpdir_name) / "cog.tif", "w", **out_meta) as dest:
+        with rasterio.open(Path(tmpdir_name) / f"{asset_name}.tif", "w", **out_meta) as dest:
             dest.write(data)
         return (
-            rioxarray.open_rasterio(Path(tmpdir_name) / "cog.tif")
+            rioxarray.open_rasterio(Path(tmpdir_name) / f"{asset_name}.tif")
             .compute()
-            .assign_coords({
-                "band": [
-                    "blue",
-                    "green",
-                    "red",
-                    "rededge1",
-                    "rededge2",
-                    "rededge3",
-                    "nir",
-                    "nir08",
-                    "swir16",
-                    "swir22",
-                ]
-            })
+            .assign_coords(assign_coords)
             .rio.reproject("EPSG:4326")
         )
 
 
 @retry(tries=3, delay=3, backoff=2)
 def _prepare_s2_ard_data_array_no_clip(item: pystac.Item) -> xarray.DataArray:
-    asset = item.assets["cog"]
+    cog_asset = item.assets["cog"]
+    cloud_asset = item.assets["cloud"]
     with tempfile.TemporaryDirectory() as tmpdir_name:
-        download_asset(asset=asset.to_dict(), output_path=Path(tmpdir_name) / "cog.tif")
-        return (
+        download_asset(asset=cog_asset.to_dict(), output_path=Path(tmpdir_name) / "cog.tif")
+        download_asset(asset=cloud_asset.to_dict(), output_path=Path(tmpdir_name) / "cloud.tif")
+        arr = (
             rioxarray.open_rasterio(Path(tmpdir_name) / "cog.tif")
             .compute()
             .assign_coords({
@@ -478,6 +496,13 @@ def _prepare_s2_ard_data_array_no_clip(item: pystac.Item) -> xarray.DataArray:
             })
             .rio.reproject("EPSG:4326")
         )
+        clouds_arr = (
+            rioxarray.open_rasterio(Path(tmpdir_name) / "cloud.tif")
+            .compute()
+            .assign_coords({"band": ["cloud"]})
+            .rio.reproject("EPSG:4326")
+        )
+        return xarray.concat((arr, clouds_arr), dim="band")
 
 
 def unify_asset_identifiers(assets_to_use: list[str], collection: str) -> list[str]:
