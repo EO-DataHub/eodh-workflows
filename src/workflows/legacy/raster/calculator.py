@@ -24,8 +24,8 @@ from src.workflows.ds.utils import (
 )
 from src.workflows.spectral.indices import (
     SPECTRAL_INDICES,
-    resolve_rescale_params,
 )
+from src.workflows.spectral.utils import resolve_rescale_params
 
 if TYPE_CHECKING:
     import pystac

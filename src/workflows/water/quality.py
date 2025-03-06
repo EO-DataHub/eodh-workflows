@@ -20,8 +20,8 @@ from src.workflows.spectral.indices import (
     DOC,
     NDWI,
     CyaCells,
-    resolve_rescale_params,
 )
+from src.workflows.spectral.utils import resolve_rescale_params
 
 _logger = get_logger(__name__)
 
