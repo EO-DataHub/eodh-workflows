@@ -13,7 +13,7 @@ $graph:
     requirements:
       ResourceRequirement:
         coresMax: 2
-        ramMax: 4096
+        ramMax: 8192
     inputs:
       stac_collection:
         label: STAC collection
@@ -68,7 +68,7 @@ $graph:
     requirements:
       ResourceRequirement:
         coresMax: 2
-        ramMax: 4096
+        ramMax: 8192
       EnvVarRequirement:
         envDef:
           ENVIRONMENT: <<ENVIRONMENT>>
