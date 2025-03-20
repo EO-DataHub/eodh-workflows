@@ -109,11 +109,11 @@ def generate_lulc_change(  # noqa: PLR0914, RUF100
         raster_arr.attrs["lulc_classes_m2"] = classes_m2
 
         # Save COG with lulc change values in metadata
-        raster_path = save_cog(arr=raster_arr, asset_id=item_id, epsg=WGS84, output_dir=output_dir)
-        thumb_fp = output_dir / f"{item_id}.png"
+        raster_path = save_cog(arr=raster_arr, asset_id=f"{item_id}_classification", epsg=WGS84, output_dir=output_dir)
+        thumb_fp = output_dir / f"{item_id}_thumb.png"
         generate_thumbnail_with_discrete_classes(
             raster_arr,
-            out_fp=output_dir / f"{item_id}.png",
+            out_fp=thumb_fp,
             classes_list=classes_orig_dict,
         )
         thumb_b64 = image_to_base64(thumb_fp)
