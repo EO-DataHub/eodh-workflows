@@ -63,7 +63,7 @@ $graph:
     requirements:
       ResourceRequirement:
         coresMax: 2
-        ramMax: 4096
+        ramMax: 8192
       EnvVarRequirement:
         envDef:
           ENVIRONMENT: <<ENVIRONMENT>>

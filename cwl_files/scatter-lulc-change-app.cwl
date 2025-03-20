@@ -16,7 +16,7 @@ $graph:
     requirements:
       - class: ResourceRequirement
         coresMax: 1
-        ramMax: 1024
+        ramMax: 4096
       - class: ScatterFeatureRequirement
 
     inputs:
@@ -67,7 +67,7 @@ $graph:
     requirements:
       ResourceRequirement:
         coresMax: 1
-        ramMax: 512
+        ramMax: 4096
       EnvVarRequirement:
         envDef:
           ENVIRONMENT: <<ENVIRONMENT>>
