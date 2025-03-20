@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import shutil
-import uuid
 from pathlib import Path
 
 import click
@@ -199,17 +198,8 @@ def merge_stac_catalogs_v2(stac_catalog_dirs: list[Path], output_dir: Path) -> N
 
         # Traverse and process each item
         for item in input_catalog.get_items(recursive=True):
-            original_id = item.id
-
-            # Generate a new UUID for the item
-            new_id = str(uuid.uuid4())
-            item.id = new_id
-
-            # Preserve the original ID in the item's properties
-            item.properties["original_item_id"] = original_id
-
             # Create a folder for the item's assets in the source_data directory
-            item_assets_dir = source_data_dir / new_id
+            item_assets_dir = source_data_dir / item.id
             item_assets_dir.mkdir(parents=True, exist_ok=True)
 
             # Copy each asset to the new folder
