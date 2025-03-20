@@ -232,7 +232,7 @@ def _process_single_item(  # noqa: PLR0914, RUF100
             mpl_cmap, _ = index_calculator.mpl_colormap
             vmin, vmax, _ = index_calculator.typical_range
             mpl_cmap, _ = index_calculator.mpl_colormap
-            thumb_fp = output_dir / f"{item_id}.png"
+            thumb_fp = output_dir / f"{item_id}_thumb.png"
             generate_thumbnail_with_continuous_colormap(
                 data=index_raster,
                 out_fp=thumb_fp,

@@ -137,11 +137,16 @@ def calculate(  # noqa: PLR0914, RUF100
             rescale_factor=scale,
             rescale_offset=offset,
         ).rio.reproject(WGS84)
-        raster_path = save_cog(arr=index_raster, asset_id=item_id, output_dir=output_dir, epsg=WGS84)
+        raster_path = save_cog(
+            arr=index_raster,
+            asset_id=f"{item_id}_{index_calculator.name}",
+            output_dir=output_dir,
+            epsg=WGS84,
+        )
 
         vmin, vmax, _ = index_calculator.typical_range
         mpl_cmap, _ = index_calculator.mpl_colormap
-        thumb_fp = output_dir / f"{item_id}.png"
+        thumb_fp = output_dir / f"{item_id}_thumb.png"
         generate_thumbnail_with_continuous_colormap(
             index_raster,
             out_fp=thumb_fp,
