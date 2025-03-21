@@ -200,7 +200,11 @@ def generate_thumbnail_with_continuous_colormap(
     new_height = math.ceil(height * scale_factor)
 
     # Resize the data using nearest-neighbor interpolation for categorical data
-    resized_data = band_data.rio.reproject(band_data.rio.crs, shape=(new_height, new_width), resampling=Resampling.mode)
+    resized_data = band_data.rio.reproject(
+        band_data.rio.crs,
+        shape=(new_height, new_width),
+        resampling=Resampling.average,
+    )
 
     # Convert resized data to a numpy array
     resized_array = resized_data.to_numpy()

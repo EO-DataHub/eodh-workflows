@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import json
 import warnings
 from pathlib import Path
@@ -185,6 +186,12 @@ def calculate(  # noqa: PLR0914, RUF100
             )
         )
         del raster_arr, index_raster
+
+        # Force GC due to some memory accumulation issues
+        # TODO: investigate what keeps the memory
+        for _ in tqdm(range(100), total=100, desc="Trying to force GC"):
+            gc.collect()
+
     generate_stac(
         items=output_items,
         output_dir=output_dir,
