@@ -464,7 +464,6 @@ def _prepare_s2_ard_data_array_clip(
             dest.write(data)
         return (
             rioxarray.open_rasterio(Path(tmpdir_name) / f"{asset_name}.tif")
-            .compute()
             .assign_coords(assign_coords)
             .rio.reproject("EPSG:4326")
         )
@@ -479,7 +478,6 @@ def _prepare_s2_ard_data_array_no_clip(item: pystac.Item) -> xarray.DataArray:
         download_asset(asset=cloud_asset.to_dict(), output_path=Path(tmpdir_name) / "cloud.tif")
         arr = (
             rioxarray.open_rasterio(Path(tmpdir_name) / "cog.tif")
-            .compute()
             .assign_coords({
                 "band": [
                     "blue",
@@ -498,7 +496,6 @@ def _prepare_s2_ard_data_array_no_clip(item: pystac.Item) -> xarray.DataArray:
         )
         clouds_arr = (
             rioxarray.open_rasterio(Path(tmpdir_name) / "cloud.tif")
-            .compute()
             .assign_coords({"band": ["cloud"]})
             .rio.reproject("EPSG:4326")
         )
