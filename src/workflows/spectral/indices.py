@@ -102,13 +102,14 @@ class IndexCalculator(abc.ABC):
     def raster_bands(self) -> list[dict[str, Any]]:
         return [
             {
-                "nodata": np.nan,
+                "nodata": "nan",
                 "unit": self.units,
             }
         ]
 
     def asset_extra_fields(self, index_raster: xarray.DataArray) -> dict[str, Any]:
         return {
+            "nodata": "nan",
             "colormap": self.raster_colormap,
             "statistics": raster_stats(index_raster),
             "raster:bands": self.raster_bands,
