@@ -33,7 +33,7 @@ def generate_stac(
     title: str = "Catalog",
     description: str = "Outputs from the job processed on ADES",
 ) -> None:
-    catalog = pystac.Catalog(id="catalog", title=title, description=description, href=output_dir.as_posix())
+    catalog = pystac.Catalog(id="", title=title, description=description, href=output_dir.as_posix())
 
     for item in items:
         catalog.add_item(item)
@@ -111,7 +111,7 @@ def prepare_local_stac(
     title: str,
     description: str,
 ) -> pystac.Catalog:
-    catalog = pystac.Catalog(id="catalog", title=f"{title} Catalog", description=description)
+    catalog = pystac.Catalog(id="", title=f"{title} Catalog", description=description)
 
     # Add items to catalog
     for item_path in items_paths:

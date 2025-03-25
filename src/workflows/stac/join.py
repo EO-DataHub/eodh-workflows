@@ -179,7 +179,7 @@ def merge_stac_catalogs(catalog1_path: Path, catalog2_path: Path, output_dir: Pa
 
 def merge_stac_catalogs_v2(stac_catalog_dirs: list[Path], output_dir: Path) -> None:
     # Create an empty root catalog for the merged output
-    merged_catalog = Catalog(id="merged-catalog", description="Merged STAC Catalog")
+    merged_catalog = Catalog(id="", description="Merged STAC Catalog")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     source_data_dir = output_dir / "source_data"
