@@ -14,7 +14,7 @@ class OAuthSettings(BaseModel):
 class SentinelHubSettings(OAuthSettings):
     stac_api_endpoint: str = "https://creodias.sentinel-hub.com/api/v1/catalog/1.0.0/"
     process_api_endpoint: str = "https://creodias.sentinel-hub.com/api/v1/process"
-    token_endpoint: str = "https://services.sentinel-hub.com/auth/realms/main/protocol/openid-connect/token"
+    token_endpoint: str = "https://services.sentinel-hub.com/auth/realms/main/protocol/openid-connect/token"  # noqa: S105
 
 
 class EODHSettings(BaseSettings):
