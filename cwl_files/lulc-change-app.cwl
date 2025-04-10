@@ -61,6 +61,7 @@ $graph:
           SENTINEL_HUB__CLIENT_SECRET: <<SENTINEL_HUB__CLIENT_SECRET>>
           SENTINEL_HUB__STAC_API_ENDPOINT: <<SENTINEL_HUB__STAC_API_ENDPOINT>>
           EODH__STAC_API_ENDPOINT: <<EODH__STAC_API_ENDPOINT>>
+          EODH__CEDA_STAC_CATALOG_PATH: <<EODH__CEDA_STAC_CATALOG_PATH>>
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest

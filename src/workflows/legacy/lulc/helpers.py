@@ -22,7 +22,7 @@ settings = current_settings()
 DATASOURCE_LOOKUP = {
     consts.stac.CEDA_ESACCI_LC_LOCAL_NAME: DataSource(
         name=consts.stac.CEDA_ESACCI_LC_LOCAL_NAME,
-        catalog=f"{settings.eodh.stac_api_endpoint}/catalogs/{consts.stac.CEDA_CATALOG_PATH}",
+        catalog=f"{settings.eodh.stac_api_endpoint}/catalogs/{settings.eodh.ceda_stac_catalog_path}",
         collection=consts.stac.CEDA_ESACCI_LC_COLLECTION_NAME,
     ),
     consts.stac.SH_CLMS_CORINELC_LOCAL_NAME: DataSource(

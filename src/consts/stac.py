@@ -7,7 +7,6 @@ SH_CLMS_WATER_BODIES_COLLECTION_NAME = "byoc-62bf6f6a-c584-48a8-a739-0bc60efee54
 SH_CLMS_WATER_BODIES_LOCAL_NAME = "clms-water-bodies"
 
 # EODH
-CEDA_CATALOG_PATH = "supported-datasets/catalogs/ceda-stac-catalogue"
 CEDA_ESACCI_LC_COLLECTION_NAME = "land_cover"
 CEDA_ESACCI_LC_LOCAL_NAME = "esacci-globallc"
 SENTINEL_2_L2A_COLLECTION_NAME = "sentinel-2-l2a"
