@@ -42,8 +42,8 @@ THREADS_PER_WORKER = 2
 DATASET_TO_CATALOGUE_LOOKUP = {
     "sentinel-2-l1c": f"{settings.eodh.stac_api_endpoint}/catalogs/supported-datasets/catalogs/earth-search-aws",
     "sentinel-2-l2a": f"{settings.eodh.stac_api_endpoint}/catalogs/supported-datasets/catalogs/earth-search-aws",
-    "sentinel-2-l2a-ard": f"{settings.eodh.stac_api_endpoint}/catalogs/supported-datasets/catalogs/ceda-stac-catalogue",
-    "esa-lccci-glcm": f"{settings.eodh.stac_api_endpoint}/catalogs/supported-datasets/catalogs/ceda-stac-catalogue",
+    "sentinel-2-l2a-ard": f"{settings.eodh.stac_api_endpoint}/catalogs/{settings.eodh.ceda_stac_catalog_path}",
+    "esa-lccci-glcm": f"{settings.eodh.stac_api_endpoint}/catalogs/{settings.eodh.ceda_stac_catalog_path}",
     "clms-corine-lc": settings.sentinel_hub.stac_api_endpoint,
     "clms-water-bodies": settings.sentinel_hub.stac_api_endpoint,
 }

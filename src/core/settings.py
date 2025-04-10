@@ -19,6 +19,7 @@ class SentinelHubSettings(OAuthSettings):
 
 class EODHSettings(BaseSettings):
     stac_api_endpoint: str = "https://staging.eodatahub.org.uk/api/catalogue/stac"
+    ceda_stac_catalog_path: str = "supported-datasets/catalogs/ceda-stac-catalogue"
 
 
 class Settings(BaseSettings):

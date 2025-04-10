@@ -441,7 +441,7 @@ v2-cwl-s2ard-wq:
 		--reproject_epsg EPSG:3857
 
 .PHONY: cwl-v1  ## Run CWL apps V1
-cwl-v1: docker-build cwl-ard-ndvi cwl-ard-doc cwl-corinelc cwl-globallc cwl-water-bodies cwl-ard-wq cwl-scatter-wq
+cwl-v1: docker-build cwl-ard-ndvi cwl-ard-doc cwl-globallc cwl-ard-wq cwl-scatter-wq
 
 .PHONY: cwl-v2  ## Run CWL apps V2
 cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc v2-cwl-s2ard-ndvi v2-cwl-s2ard-wq
