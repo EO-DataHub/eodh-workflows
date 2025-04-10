@@ -106,8 +106,6 @@ select = [
     "RUF", # Ruff-specific rules
 ]
 ignore = [
-    "ANN101", # see: https://pypi.org/project/flake8-annotations - Missing type annotation for self in method
-    "ANN102", # see: https://pypi.org/project/flake8-annotations - Missing type annotation for cls in method
     "ANN401", # see: https://pypi.org/project/flake8-annotations - Dynamically typed expressions (typing.Any) are disallowed
     "D1", # see: https://pypi.org/project/pydocstyle - D1 - undocumented public member - too restrictive
     "COM", # see: https://pypi.org/project/flake8-commas - conflicts with formatter
