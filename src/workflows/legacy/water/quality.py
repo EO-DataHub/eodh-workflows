@@ -116,18 +116,22 @@ def water_quality(  # noqa: PLR0914, PLR0915, RUF100
     output_items = []
     progress_bar = tqdm(items, desc="Processing items")
     for item in progress_bar:
-        progress_bar.set_description(f"Working with: {item.id}")
-        out_item = _process_single_item(
-            item=item,
-            stac_collection=stac_collection,
-            date_start=date_start,
-            date_end=date_end,
-            aoi=aoi_polygon,
-            output_dir=output_dir,
-            clip=clip == "True",
-        )
-        if out_item:
-            output_items.append(out_item)
+        try:
+            progress_bar.set_description(f"Working with: {item.id}")
+            out_item = _process_single_item(
+                item=item,
+                stac_collection=stac_collection,
+                date_start=date_start,
+                date_end=date_end,
+                aoi=aoi_polygon,
+                output_dir=output_dir,
+                clip=clip == "True",
+            )
+            if out_item:
+                output_items.append(out_item)
+        except Exception:  # noqa: PERF203
+            _logger.exception("Unhandled exception occurred while processing item ID: %s", item.id)
+            continue
 
     generate_stac(
         items=output_items,
