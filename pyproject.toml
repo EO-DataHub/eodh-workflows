@@ -20,14 +20,14 @@ classifiers = [
     'Intended Audience :: Developers',
     'Intended Audience :: Information Technology',
     'Intended Audience :: System Administrators',
-    'License :: OSI Approved :: MIT',
+    'License :: OSI Approved :: BSD-3-Clause',
     'Operating System :: POSIX :: Linux',
     'Topic :: Software Development :: Libraries :: Python Modules',
 ]
 dependencies = [
     'typing_extensions; python_version < "3.14.0"'
 ]
-license = { text = "MIT" }
+license = { text = "BSD-3-Clause" }
 
 [project.urls]
 Homepage = 'https://github.com/EO-DataHub/eodh-workflows'
