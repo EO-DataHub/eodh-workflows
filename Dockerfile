@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Setup environment to match variables set by repo2docker as much as possible
 # Tell apt-get to not block installs by asking for interactive human input
