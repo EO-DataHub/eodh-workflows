@@ -27,6 +27,11 @@ jobs:
         with:
           python-version-file: "pyproject.toml"
 
+      - name: Install GDAL
+        run: |
+          sudo apt update
+          sudo apt install gdal-bin libgdal-dev
+
       - name: Install the project
         run: uv sync --locked --all-extras --dev
 
