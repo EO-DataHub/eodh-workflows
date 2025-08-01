@@ -1,15 +1,7 @@
 .DEFAULT_GOAL := help
-ruff-lint = ruff check --fix --preview .
-ruff-format = ruff format --preview .
-mypy = mypy .
-pre-commit = pre-commit run --all-files
 
 DATA_DIR=data
 SHELL=/bin/bash
-CONDA_ENV_NAME=eodh-workflows
-# Note that the extra activate is needed to ensure that the activate floats env to the front of PATH
-CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate $(CONDA_ENV_NAME)
-CONDA_ACTIVATE_BASE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate base
 
 IMAGE_NAME=eopro-workflows
 CONTAINER_NAME=eopro-workflows
@@ -35,75 +27,25 @@ export PRINT_HELP_PYSCRIPT
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-# Git repo initialization
-
-.PHONY: git-init  ## Initializes Git repository
-git-init:
-	git init -b main
-	git add .
-
-# Freezing dependedncies
-
-.PHONY: lock-file  ## Creates conda-lock file
-lock-file:
-	rm -rf conda-lock-dev.yml
-	$(CONDA_ACTIVATE_BASE) ; conda-lock --mamba -f env.yaml -f env-dev.yaml --lockfile conda-lock-dev.yml
-	git add conda-lock-dev.yml
-
-.PHONY: release-lock-file  ## Creates conda-lock file without dev dependencies - to be used for deployment
-release-lock-file:
-	rm -rf conda-lock.yml
-	$(CONDA_ACTIVATE_BASE) ; conda-lock --mamba -f env.yaml --lockfile conda-lock.yml
-	git add conda-lock.yml
-
-# Environment creation
-
-.PHONY: conda-lock-install  ## Creates env from conda-lock file
-conda-lock-install:
-	$(CONDA_ACTIVATE_BASE) ; conda-lock install --mamba -n $(CONDA_ENV_NAME) conda-lock-dev.yml
-
-.PHONY: setup-pre-commit  ## Installs pre-commit hooks
-setup-pre-commit:
-	$(CONDA_ACTIVATE) ; pre-commit install
-
-.PHONY: setup-editable  ## Installs the project in an editable mode
-setup-editable:
-	$(CONDA_ACTIVATE) ; pip install -e .
-
-.PHONY: env  ## Creates local environment and installs pre-commit hooks
-env: conda-lock-install setup-pre-commit setup-editable
-
-.PHONY: remove-env  ## Removes current conda environment
-remove-env:
-	$(CONDA_ACTIVATE_BASE) ; conda env remove -n $(CONDA_ENV_NAME)
-
-.PHONY: recreate-env  ## Recreates conda environment by making new one from fresh lockfile
-recreate-env: remove-env lock-file env
-
-# Project initialization
-
-.PHONY: init-project  ## Runs Git init, lock-file creation and env setup - to be used after cookiecutter initialization
-init-project: git-init lock-file env
-
 # Helpers
 
 .PHONY: format  ## Runs code formatting (ruff)
 format:
-	$(ruff-lint)
-	$(ruff-format)
+	uv run ruff check --fix --preview .
+	uv run ruff format --preview .
 
 .PHONY: type-check  ## Runs type checking with mypy
 type-check:
-	pre-commit run --all-files mypy
+	uv run pre-commit run --all-files mypy
 
 .PHONY: test  ## Runs pytest
 test:
-	pytest -v tests/
+	uv run pytest -v tests/
 
 .PHONY: testcov  ## Runs tests and generates coverage reports
 testcov:
 	@rm -rf htmlcov
-	pytest -v --cov-report html --cov-report xml --cov=$(CONDA_ENV_NAME) tests/
+	uv run pytest -v --cov-report html --cov-report xml --cov=src tests/
 
 .PHONY: mpc  ## Runs manual pre-commit stuff
 mpc: format type-check test
@@ -114,7 +56,7 @@ docs:
 
 .PHONY: pc  ## Runs pre-commit hooks
 pc:
-	$(pre-commit)
+	uv run pre-commit run --all-files
 
 .PHONY: clean  ## Cleans artifacts
 clean:
@@ -179,7 +121,7 @@ docker-rm:
 docker-rmi:
 	@echo "Removing Docker image..."
 	@if [ "$(shell docker images -q $(IMAGE_NAME))" ]; then \
-		docker rmi $(IMAGE_NAME); \
+		docker rmi $(IMAGE_NAME) -f; \
 		echo "Docker image $(IMAGE_NAME) removed."; \
 	else \
 		echo "Docker image $(IMAGE_NAME) does not exist."; \
@@ -204,6 +146,7 @@ cwl-ndvi:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/rc-v1-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/rc-v1-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eodh/raster-calculate-app.cwl\#raster-calculate \
@@ -215,6 +158,7 @@ cwl-ard-ndvi:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/rc-v1-ard-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/rc-v1-ard-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eodh/raster-calculate-app.cwl\#raster-calculate \
@@ -226,6 +170,7 @@ cwl-ard-doc:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/rc-v1-ard-doc/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/rc-v1-ard-doc/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eodh/raster-calculate-app.cwl\#raster-calculate \
@@ -237,6 +182,7 @@ cwl-corinelc:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/lc-v1-corine/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/lc-v1-corine/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eodh/lulc-change-app.cwl\#lulc-change \
@@ -248,6 +194,7 @@ cwl-globallc:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/lc-v1-glc/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/lc-v1-glc/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eodh/lulc-change-app.cwl\#lulc-change \
@@ -259,6 +206,7 @@ cwl-water-bodies:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/lc-v1-wb/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/lc-v1-wb/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eodh/lulc-change-app.cwl\#lulc-change \
@@ -270,6 +218,7 @@ cwl-water-quality:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/wq-v1/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/wq-v1/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eodh/water-quality-app.cwl\#water-quality \
@@ -278,9 +227,10 @@ cwl-water-quality:
 
 .PHONY: cwl-ard-wq  ## Runs Water Quality app with S2 ARD
 cwl-ard-wq:
-	@cwltool \
+	cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/wq-v1-ard/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/wq-v1-ard/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eodh/water-quality-app.cwl\#water-quality \
@@ -294,6 +244,7 @@ v2-cwl-ndvi-simple:
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
 		--tmpdir-prefix=$(CWL_OUTPUT_DIR)/ndvi-simple/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/ndvi-simple/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eopro/simplest-ndvi.cwl\#simplest-ndvi \
@@ -314,6 +265,7 @@ v2-cwl-ndvi-full:
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/ndvi-full/$(shell date --iso-8601=minutes)/tmp/ \
 		--tmpdir-prefix=$(CWL_OUTPUT_DIR)/ndvi-full/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/ndvi-full/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eopro/ndvi-clip-reproject.cwl\#ndvi-clip-repr \
@@ -333,6 +285,7 @@ v2-cwl-wq:
 	cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/wq/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/wq/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eopro/water-quality.cwl\#water-quality-wf \
@@ -351,6 +304,7 @@ v2-cwl-adv-wq:
 	cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/adv-wq/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/adv-wq/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eopro/advanced-water-quality.cwl\#adv-wq \
@@ -376,6 +330,7 @@ v2-cwl-lc-glc:
 	cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/lc-glc/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/lc-glc/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
  		$(CWL_FILES_DIR)/eopro/land-cover.cwl\#lcc \
@@ -392,6 +347,7 @@ v2-cwl-lc-corine:
 	cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/lc-corine/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/lc-corine/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
  		$(CWL_FILES_DIR)/eopro/land-cover.cwl\#lcc \
@@ -408,6 +364,7 @@ v2-cwl-s2ard-ndvi:
 	cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/ndvi-full-adr/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/ndvi-full-adr/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eopro/ndvi-clip-reproject.cwl\#ndvi-clip-repr \
@@ -427,6 +384,7 @@ v2-cwl-s2ard-wq:
 	cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/wq-adr/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/wq-adr/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eopro/water-quality.cwl\#water-quality-wf \
@@ -444,7 +402,7 @@ v2-cwl-s2ard-wq:
 cwl-v1: docker-build cwl-ard-ndvi cwl-ard-doc cwl-globallc cwl-ard-wq cwl-scatter-wq
 
 .PHONY: cwl-v2  ## Run CWL apps V2
-cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-corine v2-cwl-lc-glc v2-cwl-s2ard-ndvi v2-cwl-s2ard-wq
+cwl-v2: docker-build v2-cwl-ndvi-simple v2-cwl-ndvi-full v2-cwl-wq v2-cwl-adv-wq v2-cwl-lc-glc v2-cwl-s2ard-ndvi v2-cwl-s2ard-wq
 
 .PHONY: cwl-all  ## Run ALL CWL apps
 cwl-all: cwl-v1 cwl-v2
@@ -454,6 +412,7 @@ cwl-scatter-wq:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/scatter-wq/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/scatter-wq/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/eodh/scatter-water-quality-app.cwl\#scatter-water-quality \
@@ -464,6 +423,7 @@ cwl-scatter-rc-ndvi:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/scatter-rc-ndvi/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/scatter-rc-ndvi/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/scatter-raster-calcluate-app.cwl\#scatter-raster-calculate \
@@ -474,6 +434,7 @@ cwl-scatter-rc-cya:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/scatter-rc-cya/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/scatter-rc-cya/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/scatter-raster-calculate-app.cwl\#scatter-raster-calculate \
@@ -484,6 +445,7 @@ cwl-scatter-lcc:
 	@cwltool \
 		--tmp-outdir-prefix=$(CWL_OUTPUT_DIR)/scatter-lcc/$(shell date --iso-8601=minutes)/tmp/ \
 		--outdir=$(CWL_OUTPUT_DIR)/scatter-lcc/$(shell date --iso-8601=minutes)/outputs/ \
+		--tmpdir=$PWD/data/tmp \
 		--leave-tmpdir \
 		--copy-outputs \
 		$(CWL_FILES_DIR)/scatter-lulc-change-app.cwl\#scatter-lulc-change \
