@@ -2,22 +2,22 @@
 
 The GPU utilities.
 
-::: src.utils.gpu
+::: eodh_workflows.utils.gpu
 
 ## Logging
 
 The logging utilities.
 
-::: src.utils.logging
+::: eodh_workflows.utils.logging
 
 ## MLFlow
 
 The MLFlow utilities.
 
-::: src.utils.mlflow
+::: eodh_workflows.utils.mlflow
 
 ## Serialization
 
 The serialization utils.
 
-::: src.utils.serialization
+::: eodh_workflows.utils.serialization
