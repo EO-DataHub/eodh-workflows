@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from src.utils.raster import image_to_base64
+from eodh_workflows.utils.raster import image_to_base64
 
 
 def _base64_to_image(base64_string: str) -> np.ndarray:  # type: ignore[type-arg]

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from shapely.geometry import Polygon
 
-from src.utils.geom import calculate_geodesic_area
+from eodh_workflows.utils.geom import calculate_geodesic_area
 
 
 def test_calculate_geodesic_area() -> None:

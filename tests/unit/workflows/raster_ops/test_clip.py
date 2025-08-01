@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pyproj
@@ -14,10 +14,11 @@ from shapely.geometry.multipolygon import MultiPolygon
 from shapely.geometry.polygon import Polygon
 from shapely.ops import transform
 
-from src.utils.logging import get_logger
-from src.workflows.legacy.raster.clip import clip_raster
+from eodh_workflows.utils.logging import get_logger
+from eodh_workflows.workflows.legacy.raster.clip import clip_raster
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from pathlib import Path
 
     from affine import Affine

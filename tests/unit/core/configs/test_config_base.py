@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.core.configs.base import ConfigBase
+from eodh_workflows.core.configs.base import ConfigBase
 
 
 class DummyConfig(ConfigBase):

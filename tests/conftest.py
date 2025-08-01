@@ -5,7 +5,7 @@ import typing
 
 import pytest
 
-from src import consts
+from eodh_workflows import consts
 
 if typing.TYPE_CHECKING:
     from _pytest.config import Config

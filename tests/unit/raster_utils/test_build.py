@@ -6,9 +6,9 @@ import pytest
 import xarray as xr
 from pystac import Item
 
-from src import consts
-from src.utils.raster import build_raster_array
-from src.workflows.legacy.lulc.helpers import DATASOURCE_LOOKUP, DataSource
+from eodh_workflows import consts
+from eodh_workflows.utils.raster import build_raster_array
+from eodh_workflows.workflows.legacy.lulc.helpers import DATASOURCE_LOOKUP, DataSource
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def example_source_sh() -> DataSource:
     return DATASOURCE_LOOKUP[consts.stac.SH_CLMS_CORINELC_LOCAL_NAME]
 
 
-@patch("src.utils.raster.stackstac.stack")
+@patch("eodh_workflows.utils.raster.stackstac.stack")
 def test_build_raster_array_ceda(
     mock_stack: MagicMock,
     example_source_ceda: DataSource,
@@ -63,8 +63,8 @@ def test_build_raster_array_ceda(
     assert result == mock_dataarray.squeeze().compute()
 
 
-@patch("src.utils.raster.sh_get_data")
-@patch("src.utils.raster.sh_auth_token")
+@patch("eodh_workflows.utils.raster.sh_get_data")
+@patch("eodh_workflows.utils.raster.sh_auth_token")
 def test_build_raster_array_sh(
     mock_sh_auth_token: MagicMock,
     mock_sh_get_data: MagicMock,

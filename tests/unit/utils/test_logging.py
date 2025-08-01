@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src import consts
-from src.utils.logging import get_logger, timed
+from eodh_workflows import consts
+from eodh_workflows.utils.logging import get_logger, timed
 
 _NAME_TO_LEVEL = {
     "CRITICAL": logging.CRITICAL,
@@ -67,7 +67,7 @@ def test_timed_decorator_functionality() -> None:
     assert test_func(1, 2) == 5  # noqa: PLR2004
 
 
-@patch("src.utils.logging.time.time", MagicMock(side_effect=[100.0, 101.0]))
+@patch("eodh_workflows.utils.logging.time.time", MagicMock(side_effect=[100.0, 101.0]))
 @patch("logging.Logger.info")
 def test_timed_decorator_logging(mock_info: MagicMock) -> None:
     @timed
