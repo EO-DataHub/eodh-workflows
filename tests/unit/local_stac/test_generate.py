@@ -7,8 +7,8 @@ import pystac
 import pytest
 from shapely.geometry import Polygon, mapping
 
-from src import consts
-from src.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
+from eodh_workflows import consts
+from eodh_workflows.utils.stac import generate_stac, prepare_stac_asset, prepare_stac_item, prepare_thumbnail_asset
 
 if TYPE_CHECKING:
     from pathlib import Path

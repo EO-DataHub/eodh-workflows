@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from src.core.settings import Settings, current_settings
+from eodh_workflows.core.settings import Settings, current_settings
 
 
 def test_settings() -> None:

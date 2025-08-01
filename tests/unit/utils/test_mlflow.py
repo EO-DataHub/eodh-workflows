@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from unittest.mock import patch
 
-from src.utils.mlflow import resolve_experiment_name, run_id_from_context
+from eodh_workflows.utils.mlflow import resolve_experiment_name, run_id_from_context
 
 
 def test_resolve_experiment_name_env_set() -> None:

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import pystac
 from pystac import Asset, Catalog, Item
 
-from src.workflows.stac.join import merge_stac_catalogs
+from eodh_workflows.workflows.stac.join import merge_stac_catalogs
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -20,7 +20,7 @@ def create_dummy_catalog(catalog_name: str, items_and_assets: dict[str, Any], ou
             id=item_id,
             geometry=None,
             bbox=None,
-            datetime=datetime.now(tz=timezone.utc),
+            datetime=datetime.now(tz=UTC),
             properties={},
         )
         for asset_key, asset_filename in assets.items():

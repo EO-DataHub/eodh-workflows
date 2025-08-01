@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from shapely.geometry import Polygon
 
-from src.utils.geom import geojson_to_polygon
+from eodh_workflows.utils.geom import geojson_to_polygon
 
 
 def test_gejson_to_polygon() -> None:

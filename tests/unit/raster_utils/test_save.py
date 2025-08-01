@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import xarray as xr
 
-from src.utils.raster import save_cog
+from eodh_workflows.utils.raster import save_cog
 
 if TYPE_CHECKING:
     from pathlib import Path
