@@ -8,7 +8,7 @@
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
     <option name="SDK_HOME" value="" />
-    <option name="SDK_NAME" value="eodh-workflows" />
+    <option name="SDK_NAME" value="uv (eodh-workflows)" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -24,7 +24,7 @@
         <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
       </ENTRIES>
     </EXTENSION>
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/workflows/eopro_entrypoint.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/eodh_workflows/src/workflows/eopro_entrypoint.py" />
     <option name="PARAMETERS" value="raster reproject --data_dir=data/processed/eopro/classification-summarize/esa-glc --epsg=EPSG:4326 --output_dir=data/processed/eopro/raster-reproject/esa-glc" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />

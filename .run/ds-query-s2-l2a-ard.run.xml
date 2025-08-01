@@ -8,7 +8,7 @@
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
     <option name="SDK_HOME" value="" />
-    <option name="SDK_NAME" value="eodh-workflows" />
+    <option name="SDK_NAME" value="uv (eodh-workflows)" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -24,8 +24,8 @@
         <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
       </ENTRIES>
     </EXTENSION>
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/workflows/eopro_entrypoint.py" />
-    <option name="PARAMETERS" value="ds query --stac_collection=sentinel-2-l2a-ard --area=&quot;{\&quot;type\&quot;:\&quot;Polygon\&quot;,\&quot;coordinates\&quot;:[[[-2.5962507170463245,55.15651250330746],[-2.4458753508353874,55.15651250330746],[-2.4458753508353874,55.23019781679735],[-2.5962507170463245,55.23019781679735],[-2.5962507170463245,55.15651250330746]]]}&quot; --date_start=2023-01-01 --date_end=2023-10-10 --limit=4 --clip=True --cloud_cover_max=30 --output_dir=data/processed/eopro/ds-query/s2l2aard" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/eodh_workflows/workflows/eopro_entrypoint.py" />
+    <option name="PARAMETERS" value="ds query --stac_collection=sentinel-2-l2a-ard --area=&quot;{\&quot;type\&quot;:\&quot;Polygon\&quot;,\&quot;coordinates\&quot;:[[[-2.652110837830426,51.31487834129703],[-2.5885590161086514,51.31487834129703],[-2.5885590161086514,51.35420103894873],[-2.652110837830426,51.35420103894873],[-2.652110837830426,51.31487834129703]]]}&quot; --date_start=2023-03-01 --date_end=2024-10-10 --limit=2 --clip=True --cloud_cover_max=100 --output_dir=data/processed/eopro/ds-query/s2l2aard" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

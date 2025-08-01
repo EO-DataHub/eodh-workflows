@@ -8,9 +8,8 @@
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
     <option name="SDK_HOME" value="" />
-    <option name="SDK_NAME" value="eodh-workflows" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <option name="IS_MODULE_SDK" value="false" />
+    <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
@@ -24,8 +23,8 @@
         <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
       </ENTRIES>
     </EXTENSION>
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/workflows/entrypoint.py" />
-    <option name="PARAMETERS" value="water quality --stac_collection=sentinel-2-l2a-ard --aoi=&quot;{\&quot;type\&quot;:\&quot;Polygon\&quot;,\&quot;coordinates\&quot;:[[[-2.5962507170463245,55.15651250330746],[-2.4458753508353874,55.15651250330746],[-2.4458753508353874,55.23019781679735],[-2.5962507170463245,55.23019781679735],[-2.5962507170463245,55.15651250330746]]]}&quot; --date_start=2022-01-03 --date_end=2024-12-01 --limit=13 --clip=True --output_dir=data/processed/eodh/wq-ard" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/eodh_worflows/workflows/entrypoint.py" />
+    <option name="PARAMETERS" value="water quality --stac_collection=sentinel-2-l2a-ard --aoi=&quot;{\&quot;type\&quot;:\&quot;Polygon\&quot;,\&quot;coordinates\&quot;:[[[-2.5962507170463245,55.15651250330746],[-2.4458753508353874,55.15651250330746],[-2.4458753508353874,55.23019781679735],[-2.5962507170463245,55.23019781679735],[-2.5962507170463245,55.15651250330746]]]}&quot; --date_start=2022-01-03 --date_end=2024-12-01 --limit=5 --clip=True --output_dir=data/processed/eodh/wq-ard" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
