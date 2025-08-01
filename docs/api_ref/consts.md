@@ -1,5 +1,5 @@
 The constants to be used across the project.
 
-::: src.consts.directories
+::: eodh_workflows.consts.directories
 
-::: src.consts.logging
+::: eodh_workflows.consts.logging

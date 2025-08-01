@@ -4,10 +4,10 @@ The base classes for step entrypoint configs.
 
 The base classes for step entrypoint configs.
 
-::: src.core.configs.base
+::: eodh_workflows.core.configs.base
 
 ### Argument parsing
 
 The argument parsing helper functions for the script entrypoint arguments.
 
-::: src.core.configs.argument_parsing
+::: eodh_workflows.core.configs.argument_parsing

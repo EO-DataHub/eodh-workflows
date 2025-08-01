@@ -1,6 +1,6 @@
 The application settings.
 
-::: src.core.settings
+::: eodh_workflows.core.settings
 
 ### Importing settings
 
@@ -9,7 +9,7 @@ To use current settings without the need to parse them each time you can use:
 ```python
 import logging
 
-from src.core.settings import current_settings
+from eodh_workflows.core.settings import current_settings
 
 
 # log current environment
