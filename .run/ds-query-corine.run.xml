@@ -8,7 +8,7 @@
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
     <option name="SDK_HOME" value="" />
-    <option name="SDK_NAME" value="eodh-workflows" />
+    <option name="SDK_NAME" value="uv (eodh-workflows)" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -24,7 +24,7 @@
         <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
       </ENTRIES>
     </EXTENSION>
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/workflows/eopro_entrypoint.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/eodh_workflows/workflows/eopro_entrypoint.py" />
     <option name="PARAMETERS" value="ds query --stac_collection=clms-corine-lc --area=&quot;{\&quot;type\&quot;: \&quot;Polygon\&quot;,\&quot;coordinates\&quot;: [[[14.763294437090849, 50.833598186651244],[15.052268923898112, 50.833598186651244],[15.052268923898112, 50.989077215056824],[14.763294437090849, 50.989077215056824],[14.763294437090849, 50.833598186651244]]]}&quot; --date_start=1992-01-01 --date_end=2024-08-01 --limit=2 --clip=True --output_dir=data/processed/eopro/ds-query/corine" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
