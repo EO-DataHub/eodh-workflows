@@ -80,7 +80,7 @@ $graph:
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
-    baseCommand: [ "eodh", "raster", "calculate" ]
+    baseCommand: [ "/app/.venv/bin/eodh", "raster", "calculate" ]
     inputs:
       stac_collection:
         type: string
