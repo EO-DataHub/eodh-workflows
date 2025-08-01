@@ -65,7 +65,7 @@ $graph:
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
-    baseCommand: [ "eodh", "lulc", "change" ]
+    baseCommand: [ "/app/.venv/bin/eodh", "lulc", "change" ]
     inputs:
       source:
         type: string

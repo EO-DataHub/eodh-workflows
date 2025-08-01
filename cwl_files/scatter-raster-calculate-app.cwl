@@ -94,7 +94,7 @@ $graph:
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
-    baseCommand: [ "eodh", "raster", "calculate" ]
+    baseCommand: [ "/app/.venv/bin/eodh", "raster", "calculate" ]
     inputs:
       stac_collection:
         type: string
@@ -154,7 +154,7 @@ $graph:
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
-    baseCommand: [ "eopro", "stac", "join_v2" ]
+    baseCommand: ["/app/.venv/bin/eopro", "stac", "join_v2" ]
     inputs:
       stac_catalog_dir:
         type:

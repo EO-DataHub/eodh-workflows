@@ -75,7 +75,7 @@ $graph:
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eo-datahub/eodh-workflows:latest
-    baseCommand: [ "eodh", "water", "quality" ]
+    baseCommand: [ "/app/.venv/bin/eodh", "water", "quality" ]
     inputs:
       stac_collection:
         type: string
