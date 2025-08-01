@@ -62,6 +62,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "coverage>=7.10.1",
+    "gha-update>=0.2.0",
     "interrogate>=1.7.0",
     "mock>=5.2.0",
     "mypy>=1.17.1",
