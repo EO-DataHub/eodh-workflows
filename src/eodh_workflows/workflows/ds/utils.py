@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import dask.bag
 import dask.config
 import geopandas as gpd
+import numpy as np
 import pystac
 import rasterio
 import requests
@@ -402,6 +403,7 @@ def prepare_data_array(
             bounds_latlon=bbox,
             epsg=epsg,
         )
+        .where(lambda x: x > 0, other=np.nan)
         .assign_coords({"band": mapped_asset_ids})  # use common names
         .squeeze()
         .compute()
@@ -506,6 +508,7 @@ def _prepare_s2_ard_data_array_no_clip(item: pystac.Item) -> xarray.DataArray:
                     "swir22",
                 ]
             })
+            .where(lambda x: x > 0, other=np.nan)
             .rio.reproject("EPSG:4326")
         )
         clouds_arr = (

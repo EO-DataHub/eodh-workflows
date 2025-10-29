@@ -288,12 +288,12 @@ class SAVI(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
         red = rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset)
-        return savi(nir_agg=nir, red_agg=red).rio.write_crs(raster_arr.rio.crs)
+        return savi(nir_agg=nir, red_agg=red, soil_factor=0.5).rio.write_crs(raster_arr.rio.crs)
 
 
 class EVI(IndexCalculator):

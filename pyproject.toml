@@ -30,6 +30,7 @@ dependencies = [
     "geopandas>=1.0.1",
     "matplotlib>=3.9.4",
     "mlflow>=3.1.4",
+    "notebook>=7.4.7",
     "oauthlib>=3.3.1",
     "pandas>=2.3.1",
     "planetary-computer>=1.0.0",
