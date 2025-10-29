@@ -186,6 +186,7 @@ def calculate(  # noqa: PLR0914, RUF100
                         "date_end": date_end,
                         "aoi": aoi_polygon,
                     },
+                    "eo:cloud_cover": item.properties.get("eo:cloud_cover"),
                 },
                 assets=assets,
             )
@@ -194,7 +195,7 @@ def calculate(  # noqa: PLR0914, RUF100
 
         # Force GC due to some memory accumulation issues
         # TODO: investigate what keeps the memory
-        for _ in tqdm(range(100), total=100, desc="Trying to force GC"):
+        for _ in tqdm(range(10), total=10, desc="Trying to force GC"):
             gc.collect()
 
     generate_stac(

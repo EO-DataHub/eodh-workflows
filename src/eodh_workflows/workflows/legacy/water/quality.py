@@ -119,10 +119,8 @@ def water_quality(  # noqa: PLR0914, PLR0915, RUF100
     )
 
     output_items = []
-    progress_bar = tqdm(items, desc="Processing items")
-    for item in progress_bar:
+    for item in tqdm(items, desc="Processing items"):
         try:
-            progress_bar.set_description(f"Working with: {item.id}")
             out_item = _process_single_item(
                 item=item,
                 stac_collection=stac_collection,
@@ -187,6 +185,7 @@ def _process_single_item(  # noqa: PLR0914, RUF100
                 "date_end": date_end,
                 "aoi": aoi,
             },
+            "eo:cloud_cover": item.properties.get("eo:cloud_cover"),
         },
         assets=None,
     )
