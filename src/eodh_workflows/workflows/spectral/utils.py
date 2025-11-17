@@ -31,7 +31,7 @@ def resolve_rescale_params(collection_name: str, item_datetime: datetime) -> tup
     if collection_name == "sentinel-2-l2a":  # EarthSearch AWS already uses rescale info in STAC metadata
         return 1, 0
     if collection_name == "sentinel2_ard":
-        return 1e-4, 0
+        return 1, 0
     # Rescale - keep in mind baseline change on 25th of Jan. 2022
     return (1e-4, -0.1) if item_datetime > datetime(2022, 1, 25, tzinfo=UTC) else (1e-4, 0)
 
