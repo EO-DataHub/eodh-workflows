@@ -298,7 +298,7 @@ class SAVI(IndexCalculator):
         custom_cmap_list = [{"interval_stop_value": k, "hex_color": v} for k, v in custom_cmap.items()]
         vmin, vmax, _ = self.typical_range
         return {
-            "name": "custom",
+            "name": "savi-custom",
             "reversed": False,
             "min": vmin,
             "max": vmax,
