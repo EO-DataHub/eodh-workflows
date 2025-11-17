@@ -122,8 +122,8 @@ class IndexCalculator(abc.ABC):
     @abc.abstractmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray: ...
 
     def compute(
@@ -168,8 +168,8 @@ class NDVI(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
         red = rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset)
@@ -208,8 +208,8 @@ class NDWI(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
         green = rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset)
@@ -248,8 +248,8 @@ class NDMI(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         swir = rescale(raster_arr.sel(band="swir16"), scale=rescale_factor, offset=rescale_offset)
         green = rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset)
@@ -268,6 +268,45 @@ class SAVI(IndexCalculator):
     @property
     def typical_range(self) -> tuple[float, float, int]:
         return -1.0, 1.0, 20
+
+    @property
+    def raster_colormap(self) -> dict[str, Any]:
+        custom_cmap = {
+            -1: "#000000",
+            -0.5: "#0c0c0c",
+            -0.2: "#bfbfbf",
+            -0.1: "#dbdbdb",
+            0.0: "#eaeaea",
+            0.025: "#fff9cc",
+            0.05: "#ede8b5",
+            0.075: "#ddd89b",
+            0.1: "#ccc682",
+            0.125: "#bcb76b",
+            0.15: "#afc160",
+            0.175: "#a3cc59",
+            0.2: "#91bf51",
+            0.25: "#7fb247",
+            0.3: "#70a33f",
+            0.35: "#609635",
+            0.4: "#4f892d",
+            0.45: "#3f7c23",
+            0.5: "#306d1c",
+            0.55: "#216011",
+            0.6: "#0f540a",
+            1.0: "#004400",
+        }
+        custom_cmap_list = [{"interval_stop_value": k, "hex_color": v} for k, v in custom_cmap.items()]
+        vmin, vmax, _ = self.typical_range
+        return {
+            "name": "custom",
+            "reversed": False,
+            "min": vmin,
+            "max": vmax,
+            "steps": len(custom_cmap_list),
+            "units": self.units,
+            "mpl_equivalent_cmap": None,
+            "color_mapping": custom_cmap_list,
+        }
 
     @property
     def units(self) -> str:
@@ -291,8 +330,8 @@ class SAVI(IndexCalculator):
         rescale_factor: float = 1,
         rescale_offset: float = 0,
     ) -> xarray.DataArray:
-        nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
-        red = rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset)
+        nir = rescale(raster_arr.sel(band="nir"), scale=1, offset=0)
+        red = rescale(raster_arr.sel(band="red"), scale=1, offset=0)
         return savi(nir_agg=nir, red_agg=red, soil_factor=0.5).rio.write_crs(raster_arr.rio.crs)
 
 
@@ -328,8 +367,8 @@ class EVI(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
         red = rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset)
@@ -369,8 +408,8 @@ class CyaCells(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         idx = cya_cells_ml(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
@@ -417,8 +456,8 @@ class CyaMg(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         idx = cya_mg_m3(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
@@ -464,8 +503,8 @@ class ChlACoastal(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         idx = chl_a_coastal(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
@@ -507,8 +546,8 @@ class BlueSwirRatio(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         idx = simple_ratio(
             band1=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
@@ -550,8 +589,8 @@ class ChlALow(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         idx = chl_a_low(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
@@ -597,8 +636,8 @@ class ChlAHigh(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         idx = chl_a_high(
             red_agg=rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset),
@@ -640,8 +679,8 @@ class Turbidity(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         idx = turb(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
@@ -683,8 +722,8 @@ class DOC(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         idx = doc(
             green_agg=rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset),
@@ -726,8 +765,8 @@ class CDOM(IndexCalculator):
     @staticmethod
     def calculate_index(
         raster_arr: xarray.DataArray,
-        rescale_factor: float = 1e-4,
-        rescale_offset: float = -0.1,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
     ) -> xarray.DataArray:
         idx = cdom(
             blue_agg=rescale(raster_arr.sel(band="blue"), scale=rescale_factor, offset=rescale_offset),
