@@ -330,8 +330,8 @@ class SAVI(IndexCalculator):
         rescale_factor: float = 1,
         rescale_offset: float = 0,
     ) -> xarray.DataArray:
-        nir = rescale(raster_arr.sel(band="nir"), scale=1, offset=0)
-        red = rescale(raster_arr.sel(band="red"), scale=1, offset=0)
+        nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
+        red = rescale(raster_arr.sel(band="red"), scale=rescale_factor, offset=rescale_offset)
         return savi(nir_agg=nir, red_agg=red, soil_factor=0.5).rio.write_crs(raster_arr.rio.crs)
 
 
