@@ -16,6 +16,7 @@ from eodh_workflows.workflows.spectral.functional import (
     cya_cells_ml,
     cya_mg_m3,
     doc,
+    nbr,
     ndmi,
     ndwi,
     simple_ratio,
@@ -254,6 +255,46 @@ class NDMI(IndexCalculator):
         swir = rescale(raster_arr.sel(band="swir16"), scale=rescale_factor, offset=rescale_offset)
         green = rescale(raster_arr.sel(band="green"), scale=rescale_factor, offset=rescale_offset)
         return ndmi(swir_agg=swir, green_agg=green, crs=raster_arr.rio.crs)
+
+
+class NBR(IndexCalculator):
+    @property
+    def name(self) -> str:
+        return "nbr"
+
+    @property
+    def full_name(self) -> str:
+        return "Normalized Burn Ratio (NBR)"
+
+    @property
+    def typical_range(self) -> tuple[float, float, int]:
+        return -1.0, 1.0, 20
+
+    @property
+    def units(self) -> str:
+        return "NBR"
+
+    @property
+    def mpl_colormap(self) -> tuple[str, bool]:
+        return "RdYlGn", False
+
+    @property
+    def js_colormap(self) -> tuple[str, bool]:
+        return "RdYlGn", False
+
+    @staticmethod
+    def collection_assets_to_use(item: pystac.Item) -> list[str]:  # noqa: ARG004
+        return ["nir", "swir22"]
+
+    @staticmethod
+    def calculate_index(
+        raster_arr: xarray.DataArray,
+        rescale_factor: float = 1,
+        rescale_offset: float = 0,
+    ) -> xarray.DataArray:
+        nir = rescale(raster_arr.sel(band="nir"), scale=rescale_factor, offset=rescale_offset)
+        swir22 = rescale(raster_arr.sel(band="swir22"), scale=rescale_factor, offset=rescale_offset)
+        return nbr(nir_agg=nir, swir22_agg=swir22, crs=raster_arr.rio.crs)
 
 
 class SAVI(IndexCalculator):
@@ -780,6 +821,7 @@ _SPECTRAL_INDEX_CLS: set[type[IndexCalculator]] = {
     NDVI,
     NDWI,
     NDMI,
+    NBR,
     EVI,
     SAVI,
     CyaCells,
