@@ -338,3 +338,29 @@ def ndwi(
         dims=nir_agg.dims,
         attrs=nir_agg.attrs,
     ).rio.write_crs(crs)
+
+
+def nbr(
+    nir_agg: xarray.DataArray,
+    swir22_agg: xarray.DataArray,
+    crs: int | str | CRS,
+) -> xarray.DataArray:
+    """Normalized Burn Ratio (NBR).
+
+    Args:
+        nir_agg: NIR band (Sentinel-2 B08) data array with reflectance data.
+        swir22_agg: SWIR band (Sentinel-2 B12) data array with reflectance data.
+        crs: CRS to write to the output array.
+
+    Returns:
+        NBR index array.
+
+    """
+    data = (nir_agg - swir22_agg) / (nir_agg + swir22_agg + EPS)
+    return xarray.DataArray(
+        data,
+        name="nbr",
+        coords=nir_agg.coords,
+        dims=nir_agg.dims,
+        attrs=nir_agg.attrs,
+    ).rio.write_crs(crs)
