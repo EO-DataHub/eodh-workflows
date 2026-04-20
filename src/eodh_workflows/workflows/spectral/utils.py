@@ -24,7 +24,7 @@ SCL_INVALID_PIXELS = [0, 1, 3, 8, 9, 10, 11]
 
 
 def rescale(data: xarray.DataArray, scale: float = 1e-4, offset: float = -0.1) -> xarray.DataArray:
-    return data * scale + offset
+    return data.astype(np.float64) * scale + offset
 
 
 def resolve_rescale_params(collection_name: str, item_datetime: datetime) -> tuple[float, float]:
