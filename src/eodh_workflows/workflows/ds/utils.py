@@ -434,7 +434,7 @@ def prepare_s2_ard_data_array(
                 "swir22",
             ]
         },
-    )
+    ).where(lambda x: x > 0, other=np.nan)
     cloud = _prepare_s2_ard_data_array_clip(
         item,
         aoi=aoi,
