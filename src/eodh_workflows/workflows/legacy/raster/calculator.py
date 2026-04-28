@@ -164,7 +164,7 @@ def calculate(  # noqa: PLR0914, RUF100
 
         assets = {
             "thumbnail": prepare_thumbnail_asset(thumbnail_path=thumb_fp),
-            index_calculator.name: prepare_stac_asset(
+            "data": prepare_stac_asset(
                 file_path=raster_path,
                 title=index_calculator.full_name,
                 asset_extra_fields=index_calculator.asset_extra_fields(index_raster),
